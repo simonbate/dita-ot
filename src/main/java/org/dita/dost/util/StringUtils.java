@@ -10,7 +10,6 @@ package org.dita.dost.util;
 
 import static org.dita.dost.util.Constants.*;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -20,15 +19,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
-
-import org.w3c.dom.DOMImplementation;
-import org.w3c.dom.Document;
-import org.xml.sax.*;
-import org.xml.sax.helpers.XMLReaderFactory;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 /**
  * String relevant utilities.
@@ -132,13 +122,13 @@ public final class StringUtils {
      * @return list of {@code props} attribute specializations
      */
     public static String[][] getExtProps(final String domains){
-        final List<String[]> propsBuffer = new ArrayList<String[]>();
+        final List<String[]> propsBuffer = new ArrayList<>();
         int propsStart = domains.indexOf("a(" + ATTRIBUTE_NAME_PROPS);
         int propsEnd = domains.indexOf(")",propsStart);
         while (propsStart != -1 && propsEnd != -1){
             final String propPath = domains.substring(propsStart+2,propsEnd).trim();
             final StringTokenizer propPathTokenizer = new StringTokenizer(propPath, STRING_BLANK);
-            final List<String> propList = new ArrayList<String>(128);
+            final List<String> propList = new ArrayList<>(128);
             while(propPathTokenizer.hasMoreTokens()){
                 propList.add(propPathTokenizer.nextToken());
             }
@@ -156,7 +146,7 @@ public final class StringUtils {
      * @return string set
      */
     public static Set<String> restoreSet(final String s, final String delim) {
-        final Set<String> copytoSet = new HashSet<String>();
+        final Set<String> copytoSet = new HashSet<>();
 
         if (StringUtils.isEmptyString(s)) {
             return copytoSet;

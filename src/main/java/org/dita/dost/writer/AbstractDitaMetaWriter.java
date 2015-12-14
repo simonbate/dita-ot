@@ -23,7 +23,7 @@ import static org.dita.dost.util.Constants.*;
  */
 public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
 
-    private static final Set<DitaClass> uniqueSet = Collections.unmodifiableSet(new HashSet<DitaClass>(Arrays.asList(
+    private static final Set<DitaClass> uniqueSet = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             TOPIC_CRITDATES,
             TOPIC_PERMISSIONS,
             TOPIC_PUBLISHER,
@@ -31,7 +31,7 @@ public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
             MAP_SEARCHTITLE
     )));
 
-    protected Map<String, Element> metaTable;
+    private Map<String, Element> metaTable;
 
     public void setMetaTable(final Map<String, Element> metaTable) {
         this.metaTable = metaTable;
@@ -39,7 +39,7 @@ public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
 
     public abstract Document process(final Document doc);
 
-    protected void processMetadata(final Element metadataContainer, final List<DitaClass> order) {
+    void processMetadata(final Element metadataContainer, final List<DitaClass> order) {
         for (int i = 0; i < order.size(); i++) {
             final DitaClass cls = order.get(i);
             final List<Element> newChildren = getNewChildren(cls, metadataContainer.getOwnerDocument());
@@ -60,7 +60,7 @@ public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
         }
     }
 
-    protected boolean hasMetadata(final List<DitaClass> order) {
+    boolean hasMetadata(final List<DitaClass> order) {
         for (final DitaClass cls: order) {
             if (metaTable.containsKey(cls.matcher)) {
                 return true;
@@ -77,8 +77,8 @@ public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
      * @param doc current document
      * @return list of metadata elements, may be empty
      */
-    protected List<Element> getNewChildren(final DitaClass cls, final Document doc) {
-        final List<Element> res = new ArrayList<Element>();
+    private List<Element> getNewChildren(final DitaClass cls, final Document doc) {
+        final List<Element> res = new ArrayList<>();
         if (metaTable.containsKey(cls.matcher)) {
             metaTable.get(cls.matcher);
             final NodeList list = metaTable.get(cls.matcher).getChildNodes();
@@ -91,7 +91,7 @@ public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
         return res;
     }
 
-    protected Element getInsertionRef(final Element metadataContainer, final List<DitaClass> order) {
+    private Element getInsertionRef(final Element metadataContainer, final List<DitaClass> order) {
         if (order.isEmpty()) {
             return null;
         } else {
@@ -104,7 +104,7 @@ public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
         }
     }
 
-    protected Element findMetadataContainer(final Element root, List<DitaClass> position, final DitaClass container) {
+    Element findMetadataContainer(final Element root, List<DitaClass> position, final DitaClass container) {
         Element prolog = getFirstChildElement(root, container);
         if (prolog == null) {
             prolog = root.getOwnerDocument().createElement(container.localName);
@@ -127,7 +127,7 @@ public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
         return prolog;
     }
 
-    protected Element getFirstChildElement(final Element root, final DitaClass cls) {
+    Element getFirstChildElement(final Element root, final DitaClass cls) {
         final NodeList children = root.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             final Node child = children.item(i);
@@ -141,7 +141,7 @@ public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
         return null;
     }
 
-    protected Element getLastChildElement(final Element root, final DitaClass cls) {
+    private Element getLastChildElement(final Element root, final DitaClass cls) {
         Element res = null;
         final NodeList children = root.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
@@ -156,7 +156,7 @@ public abstract class AbstractDitaMetaWriter extends AbstractDomFilter {
         return res;
     }
 
-    protected void insertAfter(final Node newChild, final Node refChild) {
+    private void insertAfter(final Node newChild, final Node refChild) {
         final Node next = refChild.getNextSibling();
         final Node parent = refChild.getParentNode();
         if (next != null) {

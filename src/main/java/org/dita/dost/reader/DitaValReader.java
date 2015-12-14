@@ -11,17 +11,16 @@ package org.dita.dost.reader;
 import static org.dita.dost.util.Constants.*;
 import static org.dita.dost.util.FilterUtils.DEFAULT;
 import static org.dita.dost.util.URLUtils.*;
-import static org.dita.dost.util.FileUtils.*;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
 import org.dita.dost.exception.DITAOTXMLErrorHandler;
 import org.dita.dost.log.MessageUtils;
 import org.dita.dost.util.CatalogUtils;
-import org.dita.dost.util.FilterUtils;
 import org.dita.dost.util.FilterUtils.Action;
 import org.dita.dost.util.FilterUtils.FilterKey;
 import org.dita.dost.util.XMLUtils;
@@ -47,7 +46,7 @@ public final class DitaValReader extends AbstractXMLReader {
     /** List of absolute flagging image paths. */
     private final List<URI> imageList;
 
-    private File ditaVal = null;
+    private URI ditaVal = null;
 
     private Map<String, Map<String, Set<Element>>> bindingMap;
     /** List of relative flagging image paths. */
@@ -60,9 +59,9 @@ public final class DitaValReader extends AbstractXMLReader {
      */
     public DitaValReader() {
         super();
-        filterMap = new HashMap<FilterKey, Action>();
-        imageList = new ArrayList<URI>(256);
-        relFlagImageList= new ArrayList<URI>(256);
+        filterMap = new HashMap<>();
+        imageList = new ArrayList<>(256);
+        relFlagImageList= new ArrayList<>(256);
 
         try {
             reader = XMLUtils.getXMLReader();
@@ -86,28 +85,32 @@ public final class DitaValReader extends AbstractXMLReader {
         reader.setEntityResolver(CatalogUtils.getCatalogResolver());
     }
 
+    /** Use {@link #read(URI)} instead. */
+    @Deprecated
     @Override
     public void read(final File input) {
+        assert input.isAbsolute();
+        read(input.toURI());
+    }
+
+    public void read(final URI input) {
         assert input.isAbsolute();
         ditaVal = input;
 
         try {
-
-            reader.setErrorHandler(new DITAOTXMLErrorHandler(ditaVal.getPath(), logger));
-            final InputSource is = new InputSource(new FileInputStream(input));
-            //Set the system ID
-            if(setSystemid) {
-                //is.setSystemId(URLUtil.correct(file).toString());
-                is.setSystemId(input.toURI().toString());
+            reader.setErrorHandler(new DITAOTXMLErrorHandler(ditaVal.toString(), logger));
+            final InputSource is = new InputSource(input.toString());
+            if (setSystemid) {
+                is.setSystemId(input.toString());
             }
             reader.parse(is);
-
-        } catch (final Exception e) {
-            logger.error(e.getMessage(), e) ;
+        } catch (final IOException | SAXException e) {
+            logger.error("Failed to read DITAVAL file: " + e.getMessage(), e);
+            return;
         }
 
         if (bindingMap != null && !bindingMap.isEmpty()) {
-            final Map<FilterKey, Action> buf = new HashMap<FilterKey, Action>(filterMap);
+            final Map<FilterKey, Action> buf = new HashMap<>(filterMap);
             for (final Map.Entry<FilterKey, Action> e: buf.entrySet()) {
                 refineAction(e.getValue(), e.getKey());
             }
@@ -143,9 +146,9 @@ public final class DitaValReader extends AbstractXMLReader {
             final URI f = flagImage;
             if (f.isAbsolute()) {
                 imageList.add(f);
-                relFlagImageList.add(getRelativePath(ditaVal.toURI(), f));
+                relFlagImageList.add(getRelativePath(ditaVal, f));
             } else {
-                imageList.add(ditaVal.toURI().resolve(f));
+                imageList.add(ditaVal.resolve(f));
                 relFlagImageList.add(f);
             }
         }
@@ -182,7 +185,7 @@ public final class DitaValReader extends AbstractXMLReader {
             return;
         }
 
-        final LinkedList<Element> queue = new LinkedList<Element>();
+        final LinkedList<Element> queue = new LinkedList<>();
 
         // Skip the sub-tree root because it has been added already.
         NodeList children = subTree.getChildNodes();
@@ -222,7 +225,7 @@ public final class DitaValReader extends AbstractXMLReader {
         if (root == null || keyValue == null) {
             return null;
         }
-        final LinkedList<Element> queue = new LinkedList<Element>();
+        final LinkedList<Element> queue = new LinkedList<>();
         queue.add(root);
         while (!queue.isEmpty()) {
             final Element node = queue.removeFirst();

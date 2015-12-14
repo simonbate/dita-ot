@@ -8,8 +8,6 @@
  */
 package org.dita.dost.util;
 
-import static org.dita.dost.util.Constants.*;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,10 +23,10 @@ public final class StyleUtils {
 
 
     //list for style name in xslt for hi-d tags
-    private static final List<String> hiStyleNameList = new ArrayList<String>();
+    private static final List<String> hiStyleNameList = new ArrayList<>();
 
     //map for storing flagging style names.
-    private static final Map<String, String> flagStyleNameMap = new HashMap<String, String>();
+    private static final Map<String, String> flagStyleNameMap = new HashMap<>();
 
     /**
      * Default Constructor

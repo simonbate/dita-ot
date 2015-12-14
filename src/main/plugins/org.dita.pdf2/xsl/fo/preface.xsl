@@ -38,7 +38,7 @@ See the accompanying license.txt file for applicable licenses.
     version="2.0">
 
      <xsl:template name="processTopicPreface">
-         <fo:page-sequence master-reference="body-sequence" format="i" xsl:use-attribute-sets="__force__page__count">
+         <fo:page-sequence master-reference="body-sequence" xsl:use-attribute-sets="page-sequence.preface">
              <xsl:call-template name="insertPrefaceStaticContents"/>
              <fo:flow flow-name="xsl-region-body">
                  <fo:block xsl:use-attribute-sets="topic">
@@ -47,11 +47,7 @@ See the accompanying license.txt file for applicable licenses.
                          <fo:marker marker-class-name="current-topic-number">
                              <xsl:number format="1"/>
                          </fo:marker>
-                         <fo:marker marker-class-name="current-header">
-                             <xsl:for-each select="child::*[contains(@class,' topic/title ')]">
-                                 <xsl:apply-templates select="." mode="getTitle"/>
-                             </xsl:for-each>
-                         </fo:marker>
+                         <xsl:apply-templates select="." mode="insertTopicHeaderMarker"/>
                      </xsl:if>
                      <xsl:apply-templates select="*[contains(@class,' topic/prolog ')]"/>
                      <xsl:call-template name="insertChapterFirstpageStaticContent">

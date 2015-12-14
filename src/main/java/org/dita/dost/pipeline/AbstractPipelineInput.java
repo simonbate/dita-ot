@@ -8,6 +8,8 @@
  */
 package org.dita.dost.pipeline;
 
+import java.util.Map;
+
 /**
  * Pipeline flow information for module input.
  */
@@ -20,7 +22,7 @@ public interface AbstractPipelineInput {
      * @param name attribute name
      * @param value attribute value
      */
-    public void setAttribute(String name, String value);
+    void setAttribute(String name, String value);
 
     /**
      * Get the attribute value.
@@ -28,6 +30,13 @@ public interface AbstractPipelineInput {
      * @param name attribute name
      * @return String attribute value, <code>null</code> if not defined.
      */
-    public String getAttribute(String name);
+    String getAttribute(String name);
+
+    /**
+     * Get the attributes.
+     *
+     * @return Map of attribute values, empty Map is no attributes have been defined.
+     */
+    Map<String, String> getAttributes();
 
 }

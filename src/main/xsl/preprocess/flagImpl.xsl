@@ -279,8 +279,8 @@ LOOK FOR FIXME TO FIX SCHEMEDEF STUFF
     </xsl:param>
     <startflag imageref="{$PATH2PROJ}{$startRevImage}">
       <alt-text>
-        <xsl:call-template name="getString">
-          <xsl:with-param name="stringName" select="'Start of change'"/>
+        <xsl:call-template name="getVariable">
+          <xsl:with-param name="id" select="'Start of change'"/>
         </xsl:call-template>
       </alt-text>
     </startflag>-->
@@ -298,8 +298,8 @@ LOOK FOR FIXME TO FIX SCHEMEDEF STUFF
     </xsl:param>
     <endflag imageref="{$PATH2PROJ}{$endRevImage}">
       <alt-text>
-        <xsl:call-template name="getString">
-          <xsl:with-param name="stringName" select="'End of change'"/>
+        <xsl:call-template name="getVariable">
+          <xsl:with-param name="id" select="'End of change'"/>
         </xsl:call-template>
       </alt-text>
     </endflag>-->
@@ -378,11 +378,23 @@ LOOK FOR FIXME TO FIX SCHEMEDEF STUFF
       </xsl:call-template>
     </xsl:if>
     <!-- default flags -->
+    <xsl:if test="$current/@audience">
+      <xsl:copy-of select="$FILTERDOC/val/prop[@att='audience' and empty(@val) and @action = 'flag']"/>
+    </xsl:if>
+    <xsl:if test="$current/@platform">
+      <xsl:copy-of select="$FILTERDOC/val/prop[@att='platform' and empty(@val) and @action = 'flag']"/>
+    </xsl:if>
+    <xsl:if test="$current/@product">
+      <xsl:copy-of select="$FILTERDOC/val/prop[@att='product' and empty(@val) and @action = 'flag']"/>
+    </xsl:if>
+    <xsl:if test="$current/@otherprops">
+      <xsl:copy-of select="$FILTERDOC/val/prop[@att='otherprops' and empty(@val) and @action = 'flag']"/>
+    </xsl:if>
     <xsl:if test="$current/@audience | $current/@platform | $current/@product | $current/@otherprops">
-      <xsl:copy-of select="$FILTERDOC/val/prop[empty(@att) and @action = 'flag']"/>
+      <xsl:copy-of select="$FILTERDOC/val/prop[empty(@att) and empty(@val) and @action = 'flag']"/>
     </xsl:if>
     <xsl:if test="$current/@rev">
-      <xsl:copy-of select="$FILTERDOC/val/revprop[empty(@att) and @action = 'flag']"/>
+      <xsl:copy-of select="$FILTERDOC/val/revprop[empty(@val) and @action = 'flag']"/>
     </xsl:if>
   </xsl:if>
   </val>
@@ -560,7 +572,7 @@ LOOK FOR FIXME TO FIX SCHEMEDEF STUFF
 
  <xsl:template name="gen-prop" as="element()*">
   <xsl:param name="flag-att" as="xs:string"/>     <!-- attribute name -->
-  <xsl:param name="flag-att-val" as="xs:string"/> <!-- content of attribute -->
+  <xsl:param name="flag-att-val" as="xs:string?"/> <!-- content of attribute -->
   
   <!-- Determine the first flag value, which is the value before the first space -->
   <xsl:variable name="firstflag" as="xs:string">

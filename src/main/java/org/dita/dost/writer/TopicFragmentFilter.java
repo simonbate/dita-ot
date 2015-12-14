@@ -5,9 +5,7 @@ import static org.dita.dost.util.URLUtils.*;
 import static org.dita.dost.util.XMLUtils.*;
 
 import java.net.URI;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.LinkedList;
+import java.util.*;
 
 import org.dita.dost.util.DitaClass;
 import org.xml.sax.Attributes;
@@ -18,11 +16,36 @@ import org.xml.sax.helpers.XMLFilterImpl;
 /**
  * Resolves same topic fragment identifies in topics.
  */
-public final class TopicFragmentFilter extends XMLFilterImpl {
+public final class TopicFragmentFilter extends AbstractXMLFilter {
 
-    final Deque<DitaClass> classes = new LinkedList<DitaClass>();
-    final Deque<String> topics = new ArrayDeque<String>();
+    public static final String PARAM_ATTRIBUTES = "attributes";
+
+    private final Deque<DitaClass> classes = new LinkedList<>();
+    private final Deque<String> topics = new ArrayDeque<>();
     
+    List<String> attrNames;
+
+    public TopicFragmentFilter() {
+        super();
+        this.attrNames = Arrays.asList(ATTRIBUTE_NAME_HREF);
+    }
+
+    public TopicFragmentFilter(final String... attrNames) {
+        super();
+        this.attrNames = Arrays.asList(attrNames);
+    }
+
+    @Override
+    public void startDocument() throws SAXException {
+        if (attrNames == null) {
+            attrNames = Arrays.asList(params.get(PARAM_ATTRIBUTES).split(","));
+        }
+        classes.clear();
+        topics.clear();
+
+        super.startDocument();
+    }
+
     @Override
     public void startElement(final String uri,
             final String localName,
@@ -35,20 +58,32 @@ public final class TopicFragmentFilter extends XMLFilterImpl {
         if (TOPIC_TOPIC.matches(cls)) {
             topics.addFirst(atts.getValue(ATTRIBUTE_NAME_ID));
         } else {
-            URI href = toURI(atts.getValue(ATTRIBUTE_NAME_HREF));
-            final String format = atts.getValue(ATTRIBUTE_NAME_FORMAT);
-            if (href != null && (format == null || format.equals(ATTR_FORMAT_VALUE_DITA))) {
-                final String fragment = href.getFragment(); 
-                if (fragment != null && fragment.startsWith(".")) {
-                    href = setFragment(href, topics.peekFirst() + fragment.substring(1));
-                    res = new AttributesImpl(res);
-                    addOrSetAttribute((AttributesImpl) res, ATTRIBUTE_NAME_HREF, href.toString());
+            for (final String attrName: attrNames) {
+                URI href = toURI(atts.getValue(attrName));
+                if (href != null && isLocalDitaReference(atts, attrName)) {
+                    final String fragment = href.getFragment();
+                    if (fragment != null && fragment.startsWith(".")) {
+                        href = setFragment(href, topics.peekFirst() + fragment.substring(1));
+                        res = new AttributesImpl(res);
+                        addOrSetAttribute((AttributesImpl) res, attrName, href.toString());
+                    }
                 }
             }
         }
         super.startElement(uri, localName, qName, res);
     }
     
+    private boolean isLocalDitaReference(final Attributes atts, final String attr) {
+        switch(attr) {
+            case ATTRIBUTE_NAME_CONREF:
+            case ATTRIBUTE_NAME_CONREFEND:
+                return true;
+            default:
+                final String format = atts.getValue(ATTRIBUTE_NAME_FORMAT);
+                return format == null || format.equals(ATTR_FORMAT_VALUE_DITA);
+        }
+    }
+
     @Override
     public void endElement(final String uri,
             final String localName,

@@ -48,7 +48,7 @@ public class XMLSerializer {
     private OutputStream outStream;
     private Writer outWriter;
 
-    private final LinkedList<QName> elementStack = new LinkedList<QName>();
+    private final LinkedList<QName> elementStack = new LinkedList<>();
     private AttributesImpl openAttributes;
     private boolean openStartElement;
 
@@ -180,7 +180,7 @@ public class XMLSerializer {
      * @throws IllegalStateException if start element is not open
      * @throws IllegalArgumentException if prefix is already bound
      */
-    public void writeNamespace(final String prefix, final String uri) throws SAXException {
+    public void writeNamespace(final String prefix, final String uri) {
         if (!openStartElement) {
             throw new IllegalStateException("Current state does not allow Namespace writing");
         }
@@ -216,7 +216,7 @@ public class XMLSerializer {
      * @throws SAXException if processing the event failed
      * @throws IllegalStateException if start element is not open
      */
-    public void writeAttribute(final String uri, final String qName, final String value) throws SAXException {
+    public void writeAttribute(final String uri, final String qName, final String value) {
         if (!openStartElement) {
             throw new IllegalStateException("Current state does not allow Attribute writing");
         }
@@ -359,7 +359,7 @@ public class XMLSerializer {
             localName = i != -1 ? qName.substring(i + 1) : qName;
             prefix = i != -1 ? qName.substring(0, i) : DEFAULT_NS_PREFIX;
             this.qName = qName;
-            mappings = new ArrayList<NamespaceMapping>(5);
+            mappings = new ArrayList<>(5);
         }
 
     }

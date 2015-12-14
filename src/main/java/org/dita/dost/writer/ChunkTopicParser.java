@@ -56,9 +56,9 @@ public final class ChunkTopicParser extends AbstractChunkTopicParser {
     }
 
     @Override
-    public void write(final File filename) throws DITAOTException {
+    public void write(final File fileDir) throws DITAOTException {
         // pass map's directory path
-        filePath = filename;
+        filePath = fileDir;
         try {
             output = new StringWriter();
             processChunk(rootTopicref, null);
@@ -133,7 +133,7 @@ public final class ChunkTopicParser extends AbstractChunkTopicParser {
                     tempWriter = output;
                     tempTopicID = topicID;
                     output = new StringWriter();
-                    topicID = new HashSet<String>();
+                    topicID = new HashSet<>();
                     if (MAP_MAP.matches(classValue)) {
                         // Very special case, we have a map element with
                         // href value.
@@ -223,8 +223,9 @@ public final class ChunkTopicParser extends AbstractChunkTopicParser {
                 currentParsingFile = resolve(filePath, parseFilePath);
 
                 if (!ATTR_PROCESSING_ROLE_VALUE_RESOURCE_ONLY.equals(processRoleValue)) {
-                    currentParsingFileTopicIDChangeTable = new HashMap<String, String>();
+                    currentParsingFileTopicIDChangeTable = new HashMap<>();
                     // TODO recursive point
+                    logger.info("Processing " + currentParsingFile.toURI());
                     reader.parse(currentParsingFile.toURI().toString());
                     if (currentParsingFileTopicIDChangeTable.size() > 0) {
                         final URI href = toURI(topicref.getAttribute(ATTRIBUTE_NAME_HREF));

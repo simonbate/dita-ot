@@ -10,12 +10,10 @@ package org.dita.dost.writer;
 
 import org.dita.dost.exception.DITAOTException;
 import org.dita.dost.util.StringUtils;
-import org.dita.dost.util.XMLUtils;
 import org.w3c.dom.*;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
-import org.xml.sax.helpers.AttributesImpl;
 import org.xml.sax.helpers.XMLFilterImpl;
 
 import javax.xml.transform.*;
@@ -26,7 +24,6 @@ import java.util.*;
 
 import static javax.xml.XMLConstants.NULL_NS_URI;
 import static org.dita.dost.util.Constants.*;
-import static org.dita.dost.util.XMLUtils.addOrSetAttribute;
 import static org.dita.dost.util.XMLUtils.AttributesBuilder;
 
 /**
@@ -41,7 +38,7 @@ public final class DitaLinksWriter extends AbstractXMLFilter {
     /** Stack of topic IDs. */
     private Deque<String> topicIdStack;
     private final ArrayList<String> topicSpecList;
-    final Transformer saxToDomTransformer;
+    private final Transformer saxToDomTransformer;
     private static final Attributes relatedLinksAtts = new AttributesBuilder()
             .add(ATTRIBUTE_NAME_CLASS, TOPIC_RELATED_LINKS.toString())
             .build();
@@ -51,7 +48,7 @@ public final class DitaLinksWriter extends AbstractXMLFilter {
      */
     public DitaLinksWriter() {
         super();
-        topicSpecList = new ArrayList<String>();
+        topicSpecList = new ArrayList<>();
         try {
             saxToDomTransformer = TransformerFactory.newInstance().newTransformer();
         } catch (final TransformerConfigurationException e) {
@@ -75,7 +72,7 @@ public final class DitaLinksWriter extends AbstractXMLFilter {
             return;
         }
         curMatchTopic = indexEntries.containsKey(SHARP) ? SHARP : null;
-        topicIdStack = new ArrayDeque<String>();
+        topicIdStack = new ArrayDeque<>();
         super.write(filename);
     }
 

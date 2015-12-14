@@ -10,7 +10,6 @@ package org.dita.dost.reader;
 
 import static org.dita.dost.util.Constants.*;
 import static org.dita.dost.util.URLUtils.*;
-import static org.dita.dost.util.FileUtils.*;
 
 import java.io.File;
 import java.net.URI;
@@ -39,9 +38,6 @@ import org.xml.sax.SAXException;
  */
 public final class KeydefFilter extends AbstractXMLFilter {
     
-    /** Output utilities */
-    private Job job;
-    private URI inputFile = null;
     /** Basedir of the current parsing file */
     private URI currentDir = null;
     /** Map of key definitions */
@@ -53,29 +49,10 @@ public final class KeydefFilter extends AbstractXMLFilter {
      * Constructor.
      */
     public KeydefFilter() {
-        keysDefMap = new HashMap<String, KeyDef>();
-        keysRefMap = new HashMap<String, String>();
+        keysDefMap = new HashMap<>();
+        keysRefMap = new HashMap<>();
     }
 
-    /**
-     * Set output utilities.
-     * 
-     * @param job output utils
-     */
-    public void setJob(final Job job) {
-        this.job = job;
-    }
-
-    
-    /**
-     * Set processing input file absolute path.
-     * 
-     * @param inputFile absolute path to root file
-     */
-    public void setInputFile(final URI inputFile) {
-        this.inputFile = inputFile;
-    }
-    
     /**
      * Get the Key definitions.
      * 
@@ -146,7 +123,7 @@ public final class KeydefFilter extends AbstractXMLFilter {
                     if (target != null && !target.toString().isEmpty()) {
                         final String attrScope = atts.getValue(ATTRIBUTE_NAME_SCOPE);
                         if (attrScope != null && (attrScope.equals(ATTR_SCOPE_VALUE_EXTERNAL) || attrScope.equals(ATTR_SCOPE_VALUE_PEER))) {
-                            keysDefMap.put(key, new KeyDef(key, target, attrScope, null));
+                            keysDefMap.put(key, new KeyDef(key, target, attrScope, null, null));
                         } else {
                             String tail = null;
                             if (target.getFragment() != null) {
@@ -156,7 +133,7 @@ public final class KeydefFilter extends AbstractXMLFilter {
                             if (!target.isAbsolute()) {
                                 target = currentDir.resolve(target);
                             }
-                            keysDefMap.put(key, new KeyDef(key, setFragment(target, tail), ATTR_SCOPE_VALUE_LOCAL, null));
+                            keysDefMap.put(key, new KeyDef(key, setFragment(target, tail), ATTR_SCOPE_VALUE_LOCAL, null, null));
                         }
                     } else if (!StringUtils.isEmptyString(keyRef)) {
                         // store multi-level keys.
@@ -164,7 +141,7 @@ public final class KeydefFilter extends AbstractXMLFilter {
                     } else {
                         // target is null or empty, it is useful in the future
                         // when consider the content of key definition
-                        keysDefMap.put(key, new KeyDef(key, null, null, null));
+                        keysDefMap.put(key, new KeyDef(key, null, null, null, null));
                     }
                 } else {
                     logger.info(MessageUtils.getInstance().getMessage("DOTJ045I", key, target != null ? target.toString() : null).toString());
@@ -177,7 +154,7 @@ public final class KeydefFilter extends AbstractXMLFilter {
      * Get multi-level keys list
      */
     private List<String> getKeysList(final String key, final Map<String, String> keysRefMap) {
-        final List<String> list = new ArrayList<String>();
+        final List<String> list = new ArrayList<>();
         // Iterate the map to look for multi-level keys
         for (Entry<String, String> entry : keysRefMap.entrySet()) {
             // Multi-level key found
@@ -203,7 +180,7 @@ public final class KeydefFilter extends AbstractXMLFilter {
         String key = null;
         KeyDef value = null;
         // tempMap storing values to avoid ConcurrentModificationException
-        final Map<String, KeyDef> tempMap = new HashMap<String, KeyDef>();
+        final Map<String, KeyDef> tempMap = new HashMap<>();
         for (Entry<String, KeyDef> entry : keysDefMap.entrySet()) {
             key = entry.getKey();
             value = entry.getValue();

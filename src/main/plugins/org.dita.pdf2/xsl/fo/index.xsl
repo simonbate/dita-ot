@@ -47,8 +47,8 @@ See the accompanying license.txt file for applicable licenses.
     <!-- *************************************************************** -->
 
     <xsl:variable name="continuedValue">
-        <xsl:call-template name="insertVariable">
-            <xsl:with-param name="theVariableID" select="'Index Continued String'"/>
+        <xsl:call-template name="getVariable">
+            <xsl:with-param name="id" select="'Index Continued String'"/>
         </xsl:call-template>
     </xsl:variable>
 
@@ -195,8 +195,8 @@ See the accompanying license.txt file for applicable licenses.
 
   <xsl:template match="/" mode="index-postprocess">
     <fo:block xsl:use-attribute-sets="__index__label" id="{$id.index}">
-      <xsl:call-template name="insertVariable">
-        <xsl:with-param name="theVariableID" select="'Index'"/>
+      <xsl:call-template name="getVariable">
+        <xsl:with-param name="id" select="'Index'"/>
       </xsl:call-template>
     </fo:block>
     <xsl:apply-templates select="//opentopic-index:index.groups" mode="index-postprocess"/>
@@ -241,8 +241,8 @@ See the accompanying license.txt file for applicable licenses.
         <xsl:choose>
             <xsl:when test="parent::*[@no-page = 'true']">
                 <fo:inline xsl:use-attribute-sets="index.see.label">
-                    <xsl:call-template name="insertVariable">
-                        <xsl:with-param name="theVariableID" select="'Index See String'"/>
+                    <xsl:call-template name="getVariable">
+                        <xsl:with-param name="id" select="'Index See String'"/>
                     </xsl:call-template>
                 </fo:inline>
                 <fo:basic-link>
@@ -264,8 +264,8 @@ See the accompanying license.txt file for applicable licenses.
                 </xsl:call-template>
                 <fo:block xsl:use-attribute-sets="index.entry__content">
                     <fo:inline xsl:use-attribute-sets="index.see-also.label">
-                        <xsl:call-template name="insertVariable">
-                            <xsl:with-param name="theVariableID" select="'Index See Also String'"/>
+                        <xsl:call-template name="getVariable">
+                            <xsl:with-param name="id" select="'Index See Also String'"/>
                         </xsl:call-template>
                     </fo:inline>
                     <fo:basic-link>
@@ -311,8 +311,8 @@ See the accompanying license.txt file for applicable licenses.
     <xsl:template match="opentopic-index:see-also-childs" mode="index-postprocess">
         <fo:block xsl:use-attribute-sets="index.see-also-entry__content">
             <fo:inline xsl:use-attribute-sets="index.see-also.label">
-                <xsl:call-template name="insertVariable">
-                    <xsl:with-param name="theVariableID" select="'Index See Also String'"/>
+                <xsl:call-template name="getVariable">
+                    <xsl:with-param name="id" select="'Index See Also String'"/>
                 </xsl:call-template>
             </fo:inline>
             <fo:basic-link>
@@ -326,17 +326,24 @@ See the accompanying license.txt file for applicable licenses.
 
   <xsl:template match="opentopic-index:index.entry" mode="index-postprocess">
     <xsl:variable name="value" select="@value"/>
+    
+    <xsl:variable name="markerName" as="xs:string"
+       select="concat('index-continued-', count(ancestor-or-self::opentopic-index:index.entry))"
+    />
+
     <xsl:choose>
       <xsl:when test="opentopic-index:index.entry">
         <fo:table>
           <xsl:if test="$index.continued-enabled">
             <fo:table-header>
-              <fo:retrieve-table-marker retrieve-class-name="index-continued" retrieve-position-within-table="last-starting"/>
+              <fo:retrieve-table-marker retrieve-class-name="{$markerName}"
+                  retrieve-position-within-table="last-starting"
+              />
             </fo:table-header>
           </xsl:if>
           <fo:table-body>
             <xsl:if test="$index.continued-enabled">
-              <fo:marker marker-class-name="index-continued"/>
+              <fo:marker marker-class-name="{$markerName}"/>
             </xsl:if>
             <fo:table-row>
               <fo:table-cell>
@@ -382,7 +389,7 @@ See the accompanying license.txt file for applicable licenses.
           </fo:table-body>
           <fo:table-body>
             <xsl:if test="$index.continued-enabled">
-              <fo:marker marker-class-name="index-continued">
+              <fo:marker marker-class-name="{$markerName}">
                 <fo:table-row>
                   <fo:table-cell>
                     <fo:block xsl:use-attribute-sets="index-indents" keep-together="always">
@@ -511,14 +518,14 @@ See the accompanying license.txt file for applicable licenses.
                 </xsl:choose>
             </xsl:variable>
             <xsl:if test="count($index/*) > 0">
-                <fo:page-sequence master-reference="index-sequence" xsl:use-attribute-sets="__force__page__count">
+                <fo:page-sequence master-reference="index-sequence" xsl:use-attribute-sets="page-sequence.index">
 
                     <xsl:call-template name="insertIndexStaticContents"/>
 
                     <fo:flow flow-name="xsl-region-body">
                         <fo:marker marker-class-name="current-header">
-                          <xsl:call-template name="insertVariable">
-                            <xsl:with-param name="theVariableID" select="'Index'"/>
+                          <xsl:call-template name="getVariable">
+                            <xsl:with-param name="id" select="'Index'"/>
                           </xsl:call-template>
                         </fo:marker>
                         <xsl:copy-of select="$index"/>
@@ -534,14 +541,14 @@ See the accompanying license.txt file for applicable licenses.
   </xsl:template>
 
     <xsl:template name="processIndexList">
-        <fo:page-sequence master-reference="index-sequence" xsl:use-attribute-sets="__force__page__count">
+        <fo:page-sequence master-reference="index-sequence" xsl:use-attribute-sets="page-sequence.index">
 
             <xsl:call-template name="insertIndexStaticContents"/>
 
             <fo:flow flow-name="xsl-region-body">
                 <fo:block xsl:use-attribute-sets="__index__label" id="{$id.index}">
-                    <xsl:call-template name="insertVariable">
-                        <xsl:with-param name="theVariableID" select="'Index'"/>
+                    <xsl:call-template name="getVariable">
+                        <xsl:with-param name="id" select="'Index'"/>
                     </xsl:call-template>
                 </fo:block>
 

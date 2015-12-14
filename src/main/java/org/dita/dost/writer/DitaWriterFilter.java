@@ -54,8 +54,6 @@ public final class DitaWriterFilter extends AbstractXMLFilter {
 
     /** Default value map. */
     private Map<String, Map<String, String>> defaultValueMap;
-    /** Absolute path to current source file. */
-    private URI currentFile;
     /** Absolute path to current destination file. */
     private File outputFile;
     /** Foreign/unknown nesting level. */
@@ -72,18 +70,14 @@ public final class DitaWriterFilter extends AbstractXMLFilter {
         defaultValueMap  = defaultMap;
     }
 
-    public void setCurrentFile(final URI currentFile) {
-        this.currentFile = currentFile;
-    }
-
     public void setOutputFile(final File outputFile) {
         this.outputFile = outputFile;
     }
 
     @Override
     public void setJob(final Job job) {
-        this.job = job;
-        fileInfoMap = new HashMap<URI, FileInfo>();
+        super.setJob(job);
+        fileInfoMap = new HashMap<>();
         for (final FileInfo f: job.getFileInfo()) {
             fileInfoMap.put(f.src, f);
         }
@@ -102,9 +96,9 @@ public final class DitaWriterFilter extends AbstractXMLFilter {
 
     @Override
     public void startDocument() throws SAXException {
-        final File path2Project = DebugAndFilterModule.getPathtoProject(getRelativePath(new File(job.getInputDir(), "dummy"), toFile(currentFile)),
+        final File path2Project = DebugAndFilterModule.getPathtoProject(getRelativePath(toFile(job.getInputDir().resolve("dummy")), toFile(currentFile)),
                 toFile(currentFile),
-                job.getInputFile(),
+                toFile(job.getInputFile()),
                 job);
         getContentHandler().startDocument();
         if (!OS_NAME.toLowerCase().contains(OS_NAME_WINDOWS)) {

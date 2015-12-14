@@ -599,9 +599,9 @@
 <xsl:template match="*" mode="process.note.common-processing">
   <xsl:param name="type" select="@type"/>
   <xsl:param name="title">
-    <xsl:call-template name="getString">
+    <xsl:call-template name="getVariable">
       <!-- For the parameter, turn "note" into "Note", caution => Caution, etc -->
-      <xsl:with-param name="stringName"
+      <xsl:with-param name="id"
            select="concat(upper-case(substring($type, 1, 1)),
                           substring($type, 2))"/>
       </xsl:call-template>
@@ -615,8 +615,8 @@
     <xsl:apply-templates select="*[contains(@class, ' ditaot-d/ditaval-startprop ')]/prop" mode="ditaval-outputflag"/>
     <span class="{$type}title">
       <xsl:value-of select="$title"/>
-      <xsl:call-template name="getString">
-        <xsl:with-param name="stringName" select="'ColonSymbol'"/>
+      <xsl:call-template name="getVariable">
+        <xsl:with-param name="id" select="'ColonSymbol'"/>
       </xsl:call-template>
     </span>
     <xsl:text> </xsl:text>
@@ -692,11 +692,11 @@
     <xsl:call-template name="setidaname"/>
     <!-- Normal flags go before the generated title; revision flags only go on the content. -->
     <xsl:apply-templates select="*[contains(@class, ' ditaot-d/ditaval-startprop ')]/prop" mode="ditaval-outputflag"/>
-    <xsl:call-template name="getString">
-      <xsl:with-param name="stringName" select="'Caution'"/>
+    <xsl:call-template name="getVariable">
+      <xsl:with-param name="id" select="'Caution'"/>
     </xsl:call-template>
-    <xsl:call-template name="getString">
-      <xsl:with-param name="stringName" select="'ColonSymbol'"/>
+    <xsl:call-template name="getVariable">
+      <xsl:with-param name="id" select="'ColonSymbol'"/>
     </xsl:call-template>
   </div>
   <div class="caution">
@@ -716,8 +716,8 @@
     <xsl:call-template name="setidaname"/>
     <!-- Normal flags go before the generated title; revision flags only go on the content. -->
     <xsl:apply-templates select="*[contains(@class, ' ditaot-d/ditaval-startprop ')]/prop" mode="ditaval-outputflag"/>
-    <xsl:call-template name="getString">
-      <xsl:with-param name="stringName" select="'Danger'"/>
+    <xsl:call-template name="getVariable">
+      <xsl:with-param name="id" select="'Danger'"/>
     </xsl:call-template>
   </div>
   <div class="danger">
@@ -1098,6 +1098,7 @@
       <xsl:variable name="tmvalue" select="@trademark"/>
 
       <!-- Determine if this is in a title, and should be marked -->
+      <!-- TODO: should return boolean -->
       <xsl:variable name="usetitle">
         <xsl:if test="ancestor::*[contains(@class, ' topic/title ')]/parent::*[contains(@class, ' topic/topic ')]">
           <xsl:choose>
@@ -1111,6 +1112,7 @@
       </xsl:variable>
 
       <!-- Determine if this is in a body, and should be marked -->
+      <!-- TODO: should return boolean -->
       <xsl:variable name="usebody">
         <xsl:choose>
           <!-- If in a title or prolog, skip -->
@@ -1128,7 +1130,8 @@
       <xsl:if test="$usetitle = 'use' or $usebody = 'use'">
         <xsl:choose>  <!-- ignore @tmtype=service or anything else -->
           <xsl:when test="@tmtype = 'tm'">&#x2122;</xsl:when>
-          <xsl:when test="@tmtype = 'reg'"><sup>&#xAE;</sup></xsl:when>
+          <xsl:when test="@tmtype = 'reg'">&#174;</xsl:when>
+          <xsl:when test="@tmtype = 'service'">&#8480;</xsl:when>
           <xsl:otherwise/>
         </xsl:choose>
       </xsl:if>
@@ -1136,25 +1139,13 @@
     <xsl:apply-templates select="*[contains(@class, ' ditaot-d/ditaval-endprop ')]" mode="out-of-line"/>
 </xsl:template>
 
-<!-- Test for in TM area: returns "tm" when parent's @xml:lang needs a trademark language;
-     Otherwise, leave blank.
-     Use the TM for US English and the AP languages (Japanese, Korean, and both Chinese).
-     Ignore the TM for all other languages. -->
+<!-- Deprecated since 2.3 --> 
 <xsl:template name="tm-area">
   <xsl:apply-templates select="." mode="mark-tm-in-this-area"/>
 </xsl:template>
-<xsl:template match="*" mode="mark-tm-in-this-area">
- <xsl:variable name="parentlang">
-  <xsl:call-template name="getLowerCaseLang"/>
- </xsl:variable>
- <xsl:choose>
-  <xsl:when test="$parentlang = 'en-us' or $parentlang = 'en'">tm</xsl:when>
-  <xsl:when test="$parentlang = 'ja-jp' or $parentlang = 'ja'">tm</xsl:when>
-  <xsl:when test="$parentlang = 'ko-kr' or $parentlang = 'ko'">tm</xsl:when>
-  <xsl:when test="$parentlang = 'zh-cn' or $parentlang = 'zh'">tm</xsl:when>
-  <xsl:when test="$parentlang = 'zh-tw' or $parentlang = 'zh'">tm</xsl:when>
-  <xsl:otherwise/>
- </xsl:choose>
+<!-- TODO: this should return boolean, not "tm" or something else -->
+<xsl:template match="*" mode="mark-tm-in-this-area" as="xs:string">
+ <xsl:text>tm</xsl:text>
 </xsl:template>
 
 
@@ -1181,12 +1172,12 @@
 <xsl:template match="*[contains(@class, ' topic/q ')]" name="topic.q">
   <span class="q">
     <xsl:call-template name="commonattributes"/>
-    <xsl:call-template name="getString">
-      <xsl:with-param name="stringName" select="'OpenQuote'"/>
+    <xsl:call-template name="getVariable">
+      <xsl:with-param name="id" select="'OpenQuote'"/>
     </xsl:call-template>
     <xsl:apply-templates/>
-    <xsl:call-template name="getString">
-      <xsl:with-param name="stringName" select="'CloseQuote'"/>
+    <xsl:call-template name="getVariable">
+      <xsl:with-param name="id" select="'CloseQuote'"/>
     </xsl:call-template>
   </span>
 </xsl:template>
@@ -1194,6 +1185,7 @@
 <xsl:template match="*[contains(@class, ' topic/term ')]" mode="output-term">
   <!-- Deprecated since 2.1 -->
   <xsl:param name="displaytext"/>
+  
   <dfn class="term">
     <xsl:call-template name="commonattributes"/>
     <xsl:call-template name="setidaname"/>
@@ -1211,9 +1203,9 @@
 <!-- Templates for internal usage in terms/abbreviation resolving -->
 <xsl:template name="getMatchingTarget" as="element()?">
   <xsl:param name="m_glossid" select="''" as="xs:string"/>
-  <xsl:param name="m_entry-file-contents" as="document-node()?"/>
+  <xsl:param name="m_entry-file-contents" as="node()?"/>
   <xsl:param name="m_reflang" select="'en-US'" as="xs:string"/>
-  <xsl:variable name="glossentries" select="$m_entry-file-contents//*[contains(@class, ' glossentry/glossentry ')]" as="element()*"/>
+  <xsl:variable name="glossentries" select="$m_entry-file-contents/descendant-or-self::*[contains(@class, ' glossentry/glossentry ')]" as="element()*"/>
   <xsl:choose>
     <xsl:when test="$m_glossid = '' and $glossentries[lang($m_reflang)]">
       <xsl:sequence select="$glossentries[lang($m_reflang)]"/>
@@ -1337,10 +1329,9 @@
         <xsl:apply-templates select="." mode="find-keyref-target"/>
       </xsl:variable>
       
-      <xsl:variable name="entry-file-contents" as="document-node()?">
+      <xsl:variable name="entry-file-contents" as="node()?">
         <xsl:if test="empty(@scope) or @scope = 'local'">
-          <xsl:variable name="entry-file-uri" select="concat($WORKDIR, $PATH2PROJ, @href)"/>        
-          <xsl:sequence select="document($entry-file-uri, /)"/>    
+          <xsl:sequence select="dita-ot:retrieve-href-target(@href)"/>
         </xsl:if>
       </xsl:variable>
       <!-- Glossary id defined in <glossentry> -->
@@ -1750,6 +1741,13 @@
   
 <xsl:variable name="table.align-default" select="'left'" as="xs:string"/>
 
+<!-- XML Exchange Table Model Document Type Definition default is all -->
+<xsl:variable name="table.frame-default" select="'all'"/>
+<!-- XML Exchange Table Model Document Type Definition default is 1 -->
+<xsl:variable name="table.rowsep-default" select="'0'"/>
+<!-- XML Exchange Table Model Document Type Definition default is 1 -->
+<xsl:variable name="table.colsep-default" select="'0'"/>
+
 <xsl:template match="*[contains(@class, ' topic/table ')]" mode="generate-table-summary-attribute">
   <!-- Override this to use a local convention for setting table's @summary attribute,
        until OASIS provides a standard mechanism for setting. -->
@@ -1930,15 +1928,23 @@
     </xsl:variable>
     <xsl:sequence select="sum($relative-widths)"/>
   </xsl:variable>
-  <xsl:apply-templates>
+  <xsl:if test="exists(*[contains(@class, ' topic/colspec ')])">
+    <colgroup>
+      <xsl:apply-templates select="*[contains(@class, ' topic/colspec ')]">
+        <xsl:with-param name="totalwidth" select="$totalwidth"/>
+      </xsl:apply-templates>
+    </colgroup>
+  </xsl:if>
+  <xsl:apply-templates select="* except *[contains(@class, ' topic/colspec ')]">
     <xsl:with-param name="totalwidth" select="$totalwidth"/>
   </xsl:apply-templates>
 </xsl:template>
 
 <xsl:template match="*[contains(@class, ' topic/colspec ')]">
   <xsl:param name="totalwidth" as="xs:double"/>
-  <xsl:variable name="width" as="xs:string">
+  <xsl:variable name="width" as="xs:string?">
     <xsl:choose>
+      <xsl:when test="empty(@colwidth)"/>
       <xsl:when test="contains(@colwidth, '*')">
         <xsl:value-of select="concat((xs:double(translate(@colwidth, '*', '')) div $totalwidth) * 100, '%')"/>
       </xsl:when>
@@ -1947,7 +1953,11 @@
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
-  <col style="width:{$width}"/>
+  <col>
+    <xsl:if test="exists($width)">
+      <xsl:attribute name="style" select="concat('width:', $width)"/>
+    </xsl:if>
+  </col>
 </xsl:template>
 
 <xsl:template match="*[contains(@class, ' topic/thead ')]" name="topic.thead">
@@ -2089,13 +2099,16 @@
       <xsl:when test="$table/@frame and $table/@frame != ''">
         <xsl:value-of select="$table/@frame"/>
       </xsl:when>
-      <xsl:otherwise>all</xsl:otherwise>
+      <xsl:otherwise>
+        <xsl:value-of select="$table.frame-default"/>
+      </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>  
   <xsl:variable name="rowsep" as="xs:integer">
+    <xsl:variable name="last-row" select="(../../../*/*[contains(@class, ' topic/row ')])[last()]" as="element()"/>
     <xsl:choose>
-      <!-- If there are more rows, keep rows on -->
-      <xsl:when test="not(../following-sibling::*)">        
+      <!-- If there are more rows, keep rows on -->      
+      <xsl:when test="not(. &lt;&lt; $last-row)">
         <xsl:choose>
           <xsl:when test="$framevalue = 'all' or $framevalue = 'bottom' or $framevalue = 'topbot'">1</xsl:when>
           <xsl:otherwise>0</xsl:otherwise>
@@ -2104,13 +2117,16 @@
       <xsl:when test="@rowsep"><xsl:value-of select="@rowsep"/></xsl:when>
       <xsl:when test="$row/@rowsep"><xsl:value-of select="$row/@rowsep"/></xsl:when>
       <xsl:when test="$colspec/@rowsep"><xsl:value-of select="$colspec/@rowsep"/></xsl:when>
-      <xsl:otherwise>1</xsl:otherwise>
+      <xsl:when test="$table/@rowsep"><xsl:value-of select="$table/@rowsep"/></xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$table.rowsep-default"/>
+      </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
   <xsl:variable name="colsep" as="xs:integer">
     <xsl:choose>
       <!-- If there are more columns, keep rows on -->
-      <xsl:when test="not(following-sibling::*)">
+      <xsl:when test="empty(following-sibling::*)">
         <xsl:choose>
           <xsl:when test="$framevalue = 'all' or $framevalue = 'sides'">1</xsl:when>
           <xsl:otherwise>0</xsl:otherwise>
@@ -2118,7 +2134,10 @@
       </xsl:when>
       <xsl:when test="@colsep"><xsl:value-of select="@colsep"/></xsl:when>
       <xsl:when test="$colspec/@colsep"><xsl:value-of select="$colspec/@colsep"/></xsl:when>
-      <xsl:otherwise>1</xsl:otherwise>
+      <xsl:when test="$table/@colsep"><xsl:value-of select="$table/@colsep"/></xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="$table.colsep-default"/>
+      </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
   <xsl:variable name="firstcol" as="xs:boolean" select="$table/@rowheader = 'firstcol' and @dita-ot:x = '1'"/>  
@@ -2699,11 +2718,11 @@
       <xsl:call-template name="commonattributes"/>
       <xsl:apply-templates select="." mode="default-required-cleanup-style"/>
       <xsl:call-template name="setidaname"/>
-      <strong><xsl:call-template name="getString">
-         <xsl:with-param name="stringName" select="'Required cleanup'"/>
+      <strong><xsl:call-template name="getVariable">
+         <xsl:with-param name="id" select="'Required cleanup'"/>
        </xsl:call-template>
-       <xsl:call-template name="getString">
-        <xsl:with-param name="stringName" select="'ColonSymbol'"/>
+       <xsl:call-template name="getVariable">
+        <xsl:with-param name="id" select="'ColonSymbol'"/>
        </xsl:call-template><xsl:text> </xsl:text></strong>
       <xsl:if test="@remap">[<xsl:value-of select="@remap"/>] </xsl:if>
       <xsl:apply-templates/>
@@ -2718,11 +2737,11 @@
      <xsl:call-template name="commonattributes"/>
      <xsl:apply-templates select="." mode="default-draft-comment-style"/>
      <xsl:call-template name="setidaname"/>
-     <strong><xsl:call-template name="getString">
-        <xsl:with-param name="stringName" select="'Draft comment'"/>
+     <strong><xsl:call-template name="getVariable">
+        <xsl:with-param name="id" select="'Draft comment'"/>
       </xsl:call-template>
-      <xsl:call-template name="getString">
-        <xsl:with-param name="stringName" select="'ColonSymbol'"/>
+      <xsl:call-template name="getVariable">
+        <xsl:with-param name="id" select="'ColonSymbol'"/>
        </xsl:call-template><xsl:text> </xsl:text></strong>
      <xsl:if test="@author"><xsl:value-of select="@author"/><xsl:text> </xsl:text></xsl:if>
      <xsl:if test="@disposition"><xsl:value-of select="@disposition"/><xsl:text> </xsl:text></xsl:if>
@@ -3108,6 +3127,7 @@
 <xsl:template name="sect-heading">
   <xsl:param name="defaulttitle"/> <!-- get param by reference -->
   <xsl:call-template name="output-message">
+    <xsl:with-param name="msgcat">DOTX</xsl:with-param>
     <xsl:with-param name="msgnum">066</xsl:with-param>
     <xsl:with-param name="msgsev">W</xsl:with-param>
     <xsl:with-param name="msgparams">%1=sect-heading</xsl:with-param>
@@ -3277,8 +3297,8 @@
 <xsl:template name="gen-toc">
   <div>
   <h3 class="sectiontitle">
-    <xsl:call-template name="getString">
-      <xsl:with-param name="stringName" select="'Contents'"/>
+    <xsl:call-template name="getVariable">
+      <xsl:with-param name="id" select="'Contents'"/>
     </xsl:call-template>
   </h3>
    <ul>
@@ -3344,24 +3364,27 @@
     <xsl:when test="*[contains(@class, ' topic/title ')]">
       <caption>
         <span class="tablecap">
-         <xsl:choose>     <!-- Hungarian: "1. Table " -->
-          <xsl:when test="$ancestorlang = ('hu', 'hu-hu')">
-            <xsl:value-of select="$tbl-count-actual"/>
-            <xsl:text>. </xsl:text>
-            <xsl:call-template name="getString">
-              <xsl:with-param name="stringName" select="'Table'"/>
-             </xsl:call-template>
-            <xsl:text> </xsl:text>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:call-template name="getString">
-              <xsl:with-param name="stringName" select="'Table'"/>
-             </xsl:call-template>
-            <xsl:text> </xsl:text>
-            <xsl:value-of select="$tbl-count-actual"/>
-            <xsl:text>. </xsl:text>
-          </xsl:otherwise>
-         </xsl:choose>
+          <span class="table--title-label">
+            <!-- TODO language specific processing should be done with string variables -->
+            <xsl:choose>     <!-- Hungarian: "1. Table " -->
+              <xsl:when test="$ancestorlang = ('hu', 'hu-hu')">
+                <xsl:value-of select="$tbl-count-actual"/>
+                <xsl:text>. </xsl:text>
+                <xsl:call-template name="getVariable">
+                  <xsl:with-param name="id" select="'Table'"/>
+                 </xsl:call-template>
+                <xsl:text> </xsl:text>
+             </xsl:when>
+             <xsl:otherwise>
+                <xsl:call-template name="getVariable">
+                  <xsl:with-param name="id" select="'Table'"/>
+                 </xsl:call-template>
+                <xsl:text> </xsl:text>
+                <xsl:value-of select="$tbl-count-actual"/>
+                <xsl:text>. </xsl:text>
+              </xsl:otherwise>
+            </xsl:choose>
+          </span>
          <xsl:apply-templates select="*[contains(@class, ' topic/title ')]" mode="tabletitle"/>
          <xsl:if test="*[contains(@class, ' topic/desc ')]">
            <xsl:text>. </xsl:text>
@@ -3416,24 +3439,26 @@
     <!-- title -or- title & desc -->
     <xsl:when test="*[contains(@class, ' topic/title ')]">
       <span class="figcap">
-       <xsl:choose>      <!-- Hungarian: "1. Figure " -->
-        <xsl:when test="$ancestorlang = ('hu', 'hu-hu')">
-         <xsl:value-of select="$fig-count-actual"/>
-         <xsl:text>. </xsl:text>
-         <xsl:call-template name="getString">
-          <xsl:with-param name="stringName" select="'Figure'"/>
-         </xsl:call-template>
-         <xsl:text> </xsl:text>
-        </xsl:when>
-        <xsl:otherwise>
-         <xsl:call-template name="getString">
-          <xsl:with-param name="stringName" select="'Figure'"/>
-         </xsl:call-template>
-         <xsl:text> </xsl:text>
-         <xsl:value-of select="$fig-count-actual"/>
-         <xsl:text>. </xsl:text>
-        </xsl:otherwise>
-       </xsl:choose>
+        <span class="fig--title-label">
+         <xsl:choose>      <!-- Hungarian: "1. Figure " -->
+          <xsl:when test="$ancestorlang = ('hu', 'hu-hu')">
+           <xsl:value-of select="$fig-count-actual"/>
+           <xsl:text>. </xsl:text>
+           <xsl:call-template name="getVariable">
+            <xsl:with-param name="id" select="'Figure'"/>
+           </xsl:call-template>
+           <xsl:text> </xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:call-template name="getVariable">
+            <xsl:with-param name="id" select="'Figure'"/>
+           </xsl:call-template>
+           <xsl:text> </xsl:text>
+           <xsl:value-of select="$fig-count-actual"/>
+           <xsl:text>. </xsl:text>
+          </xsl:otherwise>
+         </xsl:choose>
+        </span>
        <xsl:apply-templates select="*[contains(@class, ' topic/title ')]" mode="figtitle"/>
        <xsl:if test="*[contains(@class, ' topic/desc ')]">
          <xsl:text>. </xsl:text>
@@ -3609,8 +3634,8 @@
       <meta name="copyright">
         <xsl:attribute name="content">
           <xsl:text>(C) </xsl:text>
-          <xsl:call-template name="getString">
-            <xsl:with-param name="stringName" select="'Copyright'"/>
+          <xsl:call-template name="getVariable">
+            <xsl:with-param name="id" select="'Copyright'"/>
           </xsl:call-template>
           <xsl:text> </xsl:text>
           <xsl:value-of select="$YEAR"/>
@@ -3620,8 +3645,8 @@
       <meta name="DC.rights.owner">
         <xsl:attribute name="content">
           <xsl:text>(C) </xsl:text>
-          <xsl:call-template name="getString">
-            <xsl:with-param name="stringName" select="'Copyright'"/>
+          <xsl:call-template name="getVariable">
+            <xsl:with-param name="id" select="'Copyright'"/>
           </xsl:call-template>
           <xsl:text> </xsl:text><xsl:value-of select="$YEAR"/>
         </xsl:attribute>
@@ -3844,7 +3869,8 @@
   </xsl:template>
 
   <!-- Add for "New <data> element (#9)" in DITA 1.1 -->
-  <xsl:template match="*[contains(@class, ' topic/data ')]" />
+  <xsl:template match="*[contains(@class, ' topic/data ')] |
+                       *[contains(@class, ' topic/data-about ')]" />
 
   <!-- Add for "Support foreign content vocabularies such as 
     MathML and SVG with <unknown> (#35) " in DITA 1.1 -->
@@ -3877,6 +3903,7 @@
     <xsl:param name="keys" select="@keyref"/>
     <!-- Deprecated since 2.1 -->
     <xsl:param name="target" select="@href"/>
+    
     <xsl:choose>
       <xsl:when test="contains($target, '://')">
         <xsl:value-of select="$target"/>
@@ -3903,6 +3930,12 @@
     <xsl:param name="type"/>
     <xsl:param name="displaytext" select="''"/>
     <xsl:param name="keys" select="@keyref"/>
+    
+    <xsl:call-template name="output-message">
+      <xsl:with-param name="msgnum">069</xsl:with-param>
+      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="msgparams">%1=pull-in-title</xsl:with-param>
+    </xsl:call-template>
     <xsl:choose>
       <xsl:when test="$displaytext = '' and $keys != ''">
         <xsl:variable name="target">
@@ -3958,6 +3991,12 @@
   <!-- Deprecated since 2.1 -->
   <xsl:template match="*" mode="common-processing-phrase-within-link">
     <xsl:param name="type"/>
+    
+    <xsl:call-template name="output-message">
+      <xsl:with-param name="msgnum">069</xsl:with-param>
+      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="msgparams">%1=common-processing-phrase-within-link</xsl:with-param>
+    </xsl:call-template>
     <xsl:call-template name="commonattributes">
       <xsl:with-param name="default-output-class">
         <xsl:if test="normalize-space($type) != name()">
@@ -4005,9 +4044,11 @@
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:section-with-multiple-titles">
+    <xsl:param name="actual-element" select="name(.)"/>
     <xsl:call-template name="output-message">
       <xsl:with-param name="msgnum">041</xsl:with-param>
       <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="msgparams">%1=<xsl:value-of select="$actual-element"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 

@@ -10,6 +10,7 @@ package org.dita.dost.writer;
 
 import static org.dita.dost.util.Constants.*;
 import static org.dita.dost.util.FileUtils.*;
+import static org.dita.dost.util.URLUtils.toFile;
 import static org.dita.dost.util.XMLUtils.*;
 
 import java.io.File;
@@ -29,13 +30,12 @@ public final class TopicRefWriter extends AbstractXMLFilter {
     private Map<String, String> changeTable = null;
     private Map<String, String> conflictTable = null;
     private File currentFileDir = null;
-    private File currentFilePath = null;
     /** Using for rectify relative path of xml */
     private String fixpath = null;
 
     @Override
     public void write(final File outputFilename) throws DITAOTException {
-        currentFilePath = outputFilename.getAbsoluteFile();
+        setCurrentFile(outputFilename.toURI());
         currentFileDir = outputFilename.getParentFile();
         super.write(outputFilename);
     }
@@ -46,14 +46,23 @@ public final class TopicRefWriter extends AbstractXMLFilter {
      * @param conflictTable conflictTable
      */
     public void setup(final Map<String, String> conflictTable) {
+        for (final Map.Entry<String, String> e: changeTable.entrySet()) {
+            assert new File(e.getKey()).isAbsolute();
+            assert new File(e.getValue()).isAbsolute();
+        }
         this.conflictTable = conflictTable;
     }
 
     public void setChangeTable(final Map<String, String> changeTable) {
+        for (final Map.Entry<String, String> e: changeTable.entrySet()) {
+            assert new File(e.getKey()).isAbsolute();
+            assert new File(e.getValue()).isAbsolute();
+        }
         this.changeTable = changeTable;
     }
 
     public void setFixpath(final String fixpath) {
+        assert fixpath != null ? new File(fixpath).isAbsolute() : true;
         this.fixpath = fixpath;
     }
 
@@ -106,8 +115,7 @@ public final class TopicRefWriter extends AbstractXMLFilter {
     private boolean isLocalDita(final Attributes atts) {
         final String classValue = atts.getValue(ATTRIBUTE_NAME_CLASS);
         if (classValue == null
-                // FIXME doesn't handle e.g. data, data-about, author, or source elements correctly
-                || (!TOPIC_XREF.matches(classValue) && !TOPIC_LINK.matches(classValue) && !MAP_TOPICREF.matches(classValue))) {
+                || (TOPIC_IMAGE.matches(classValue))) {
             return false;
         }
 
@@ -147,7 +155,7 @@ public final class TopicRefWriter extends AbstractXMLFilter {
 
         if (isLocalDita(atts)) {
             // replace the href value if it's referenced topic is extracted.
-            final File rootPathName = currentFilePath;
+            final File rootPathName = toFile(currentFile);
             String changeTargetkey = resolve(currentFileDir, hrefValue).getPath();
             String changeTarget = changeTable.get(changeTargetkey);
 

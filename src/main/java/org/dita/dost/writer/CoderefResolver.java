@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.dita.dost.util.Job;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.dita.dost.exception.DITAOTException;
@@ -53,7 +54,6 @@ public final class CoderefResolver extends AbstractXMLFilter {
 
     // Variables ---------------------------------------------------------------
 
-    private File currentFile = null;
     private int ignoreDepth = 0;
 
     // Constructors ------------------------------------------------------------
@@ -69,11 +69,7 @@ public final class CoderefResolver extends AbstractXMLFilter {
     @Override
     public void write(final File filename) throws DITAOTException {
         assert filename.isAbsolute();
-        // ignore in-exists file
-        if (filename == null || !filename.exists()) {
-            return;
-        }
-        currentFile = filename;
+        setCurrentFile(filename.toURI());
         super.write(filename);
     }
 
@@ -92,8 +88,16 @@ public final class CoderefResolver extends AbstractXMLFilter {
             try{
                 final URI hrefValue = toURI(atts.getValue(ATTRIBUTE_NAME_HREF));
                 if (hrefValue != null){
-                    final File codeFile = FileUtils.resolve(currentFile.getParentFile().getAbsoluteFile(), toFile(hrefValue));
+                    File codeFile = toFile(stripFragment(currentFile.resolve(hrefValue))).getAbsoluteFile();
+                    if (!codeFile.exists()) {
+                        final URI rel = job.tempDir.toURI().relativize(codeFile.toURI());
+                        final Job.FileInfo fi = job.getFileInfo(rel);
+                        if (fi != null && fi.src.getScheme().equals("file")) {
+                            codeFile = new File(fi.src);
+                        }
+                    }
                     if (codeFile.exists()){
+                        logger.debug("Resolve coderef " + codeFile);
                         final Charset charset = getCharset(atts.getValue(ATTRIBUTE_NAME_FORMAT));
                         BufferedReader codeReader = null;
                         try {

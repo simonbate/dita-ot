@@ -13,6 +13,7 @@ import static org.apache.commons.io.FilenameUtils.*;
 import static org.dita.dost.util.Constants.*;
 import static org.dita.dost.util.StringUtils.join;
 import static org.dita.dost.util.URLUtils.toURI;
+import static org.dita.dost.util.XMLUtils.close;
 import static org.dita.dost.writer.AbstractChunkTopicParser.getElementNode;
 import static org.dita.dost.writer.AbstractChunkTopicParser.getText;
 import static java.util.Arrays.*;
@@ -52,8 +53,8 @@ public final class ChunkMapReader extends AbstractDomFilter {
     public static final String CHUNK_SELECT_BRANCH = "select-branch";
     public static final String CHUNK_SELECT_TOPIC = "select-topic";
     public static final String CHUNK_SELECT_DOCUMENT = "select-document";
-    public static final String CHUNK_BY_DOCUMENT = "by-document";
-    public static final String CHUNK_BY_TOPIC = "by-topic";
+    private static final String CHUNK_BY_DOCUMENT = "by-document";
+    private static final String CHUNK_BY_TOPIC = "by-topic";
     public static final String CHUNK_TO_CONTENT = "to-content";
     public static final String CHUNK_TO_NAVIGATION = "to-navigation";
 
@@ -63,9 +64,9 @@ public final class ChunkMapReader extends AbstractDomFilter {
     /** Input file's parent directory */
     private File fileDir = null;
     // ChunkTopicParser assumes keys and values are chimera paths, i.e. systems paths with fragments.
-    private final LinkedHashMap<String, String> changeTable = new LinkedHashMap<String, String>(128);
+    private final LinkedHashMap<String, String> changeTable = new LinkedHashMap<>(128);
 
-    private final Map<String, String> conflictTable = new HashMap<String, String>(128);
+    private final Map<String, String> conflictTable = new HashMap<>(128);
 
     private boolean supportToNavigation;
 
@@ -137,7 +138,9 @@ public final class ChunkMapReader extends AbstractDomFilter {
                     final Element currentElem = (Element) node;
                     if (MAP_RELTABLE.matches(currentElem)) {
                         updateReltable(currentElem);
-                    } else if (MAP_TOPICREF.matches(currentElem) && !MAPGROUP_D_TOPICGROUP.matches(currentElem)) {
+                    } else if (MAPGROUP_D_TOPICGROUP.matches(currentElem)) {
+                    	processChildTopicref(currentElem);
+                    } else if (MAP_TOPICREF.matches(currentElem)) {
                         processTopicref(currentElem);
                     }
 
@@ -249,21 +252,19 @@ public final class ChunkMapReader extends AbstractDomFilter {
         }
     }
 
-    private void outputMapFile(final File file, final Document doc) {  
-        OutputStream output = null;
+    private void outputMapFile(final File file, final Document doc) {
+        StreamResult result = null;
         try {
-            output = new FileOutputStream(file);
             final Transformer t = TransformerFactory.newInstance().newTransformer();
-            t.transform(new DOMSource(doc), new StreamResult(output));
+            result = new StreamResult(new FileOutputStream(file));
+            t.transform(new DOMSource(doc), result);
         } catch (final RuntimeException e) {
             throw e;
         } catch (final Exception e) {
             logger.error(e.getMessage(), e);
         } finally {
             try {
-                if (output != null) {
-                    output.close();
-                }
+                close(result);
             } catch (final Exception e) {
                 logger.error(e.getMessage(), e);
             }
@@ -376,7 +377,7 @@ public final class ChunkMapReader extends AbstractDomFilter {
      *
      * @return generated file name
      */
-    protected String generateFilename() {
+    private String generateFilename() {
         return chunkFilenameGenerator.generateFilename("XChunk", FILE_EXTENSION_DITA);
     }
 
@@ -433,9 +434,7 @@ public final class ChunkMapReader extends AbstractDomFilter {
             serializer.writeEndElement(); // topic
             serializer.writeEndDocument();
             serializer.close();
-        } catch (final IOException e) {
-            logger.error("Failed to write generated chunk: " + e.getMessage(), e);
-        } catch (final SAXException e) {
+        } catch (final IOException | SAXException e) {
             logger.error("Failed to write generated chunk: " + e.getMessage(), e);
         } finally {
             if (output != null) {
@@ -571,6 +570,10 @@ public final class ChunkMapReader extends AbstractDomFilter {
      * @return map of changed files
      */
     public Map<String, String> getChangeTable() {
+        for (final Map.Entry<String, String> e: changeTable.entrySet()) {
+            assert new File(e.getKey()).isAbsolute();
+            assert new File(e.getValue()).isAbsolute();
+        }
         return Collections.unmodifiableMap(changeTable);
     }
 
@@ -580,6 +583,10 @@ public final class ChunkMapReader extends AbstractDomFilter {
      * @return conflict table
      */
     public Map<String, String> getConflicTable() {
+        for (final Map.Entry<String, String> e: conflictTable.entrySet()) {
+            assert new File(e.getKey()).isAbsolute();
+            assert new File(e.getValue()).isAbsolute();
+        }
         return conflictTable;
     }
 

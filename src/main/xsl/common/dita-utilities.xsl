@@ -14,6 +14,8 @@
   <xsl:param name="variableFiles.url" select="'plugin:org.dita.base:xsl/common/strings.xml'"/>
   
   <xsl:variable name="pixels-per-inch" select="number(96)"/>
+
+  <xsl:key name="id" match="*[@id]" use="@id"/>
   
   <!-- Function to determine the current language, and return it in lower case -->
   <xsl:template name="getLowerCaseLang">
@@ -59,6 +61,13 @@
   <!-- Deprecated. Use getVariable template instead. -->
   <xsl:template name="getString">
     <xsl:param name="stringName"/>
+    
+    <xsl:call-template name="output-message">
+      <xsl:with-param name="msgcat">DOTX</xsl:with-param>
+      <xsl:with-param name="msgnum">066</xsl:with-param>
+      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="msgparams">%1=getString</xsl:with-param>
+    </xsl:call-template>
     <xsl:call-template name="getVariable">
       <xsl:with-param name="id" select="string($stringName)"/>
     </xsl:call-template>
@@ -66,7 +75,7 @@
   
   <xsl:template name="getVariable">
     <xsl:param name="id" as="xs:string"/>
-    <xsl:param name="params" as="element()*"/>
+    <xsl:param name="params" as="node()*"/>
         
     <xsl:variable name="ancestorlang" as="xs:string*">
       <xsl:variable name="l" as="xs:string*">
@@ -93,10 +102,10 @@
   
   <xsl:template name="findString">
     <xsl:param name="id" as="xs:string"/>
-    <xsl:param name="params" as="element()*"/>
+    <xsl:param name="params" as="node()*"/>
     <xsl:param name="ancestorlang" as="xs:string*"/>
     <xsl:param name="defaultlang" as="xs:string*"/>
-        
+
     <xsl:variable name="l" select="($ancestorlang, $defaultlang)[1]" as="xs:string?"/>
     <xsl:choose>
       <xsl:when test="exists($l)">
@@ -173,39 +182,38 @@
     <!-- We handle units of cm, mm, in, pt, pc, px.  We also accept em,
       but just treat 1em=1pc.  An omitted unit is taken as px. -->
     
-    <xsl:variable name="dimenx" select="concat('00',$dimen)"/>
-    <xsl:variable name="units" select="substring($dimenx,string-length($dimenx)-1)"/>
-    <xsl:variable name="numeric-value" select="number(substring($dimenx,1,string-length($dimenx)-2))"/>
+    <xsl:variable name="units" select="substring($dimen, string-length($dimen) - 1)"/>
+    <xsl:variable name="numeric-value" select="number(substring($dimen, 1, string-length($dimen) - 2))"/>
     <xsl:choose>
-      <xsl:when test="string(number($units))!='NaN' and string(number($numeric-value))!='NaN'">
+      <xsl:when test="string(number($dimen)) != 'NaN'">
         <!-- Since $units is a number, the input was unitless, so we default
           the unit to pixels and just return the input value -->
-        <xsl:value-of select="round(number(concat($numeric-value,$units)))"/>
+        <xsl:value-of select="round(number($dimen))"/>
       </xsl:when>
-      <xsl:when test="string(number($numeric-value))='NaN'">
+      <xsl:when test="string($numeric-value) = 'NaN'">
         <!-- If the input isn't valid, just return 100% -->
         <xsl:value-of select="'100%'"/>
       </xsl:when>
       <xsl:when test="$units='cm'">
-        <xsl:value-of select="number(round($numeric-value * $pixels-per-inch div 2.54))"/>
+        <xsl:value-of select="round($numeric-value * $pixels-per-inch div 2.54)"/>
       </xsl:when>
       <xsl:when test="$units='mm'">
-        <xsl:value-of select="number(round($numeric-value * $pixels-per-inch div 25.4))"/>
+        <xsl:value-of select="round($numeric-value * $pixels-per-inch div 25.4)"/>
       </xsl:when>
       <xsl:when test="$units='in'">
-        <xsl:value-of select="number(round($numeric-value * $pixels-per-inch))"/>
+        <xsl:value-of select="round($numeric-value * $pixels-per-inch)"/>
       </xsl:when>
       <xsl:when test="$units='pt'">
-        <xsl:value-of select="number(round($numeric-value * $pixels-per-inch div 72))"/>
+        <xsl:value-of select="round($numeric-value * $pixels-per-inch div 72)"/>
       </xsl:when>
       <xsl:when test="$units='pc'">
-        <xsl:value-of select="number(round($numeric-value * $pixels-per-inch div 6))"/>
+        <xsl:value-of select="round($numeric-value * $pixels-per-inch div 6)"/>
       </xsl:when>
       <xsl:when test="$units='px'">
-        <xsl:value-of select="number(round($numeric-value))"/>
+        <xsl:value-of select="round($numeric-value)"/>
       </xsl:when>
       <xsl:when test="$units='em'">
-        <xsl:value-of select="number(round($numeric-value * $pixels-per-inch div 6))"/>
+        <xsl:value-of select="round($numeric-value * $pixels-per-inch div 6)"/>
       </xsl:when>
       <xsl:otherwise>
         <!-- If the input isn't valid, just return 100% -->
@@ -237,6 +245,12 @@
 <!-- Deprecated: use replace-extension instead -->
 <xsl:template match="*" mode="parseHrefUptoExtension">
   <xsl:param name="href" select="@href"/>
+  
+  <xsl:call-template name="output-message">
+    <xsl:with-param name="msgnum">069</xsl:with-param>
+    <xsl:with-param name="msgsev">W</xsl:with-param>
+    <xsl:with-param name="msgparams">%1=parseHrefUptoExtension</xsl:with-param>
+  </xsl:call-template>  
   <xsl:variable name="uptoDot"><xsl:value-of select="substring-before($href,'.')"/></xsl:variable>
   <xsl:variable name="afterDot"><xsl:value-of select="substring-after($href,'.')"/></xsl:variable>
   <xsl:value-of select="$uptoDot"/>
@@ -369,6 +383,17 @@
     </xsl:choose>
   </xsl:template>
 
+  <xsl:function name="dita-ot:resolve-href-path" as="xs:anyURI">
+    <xsl:param name="href" as="attribute(href)"/>
+
+    <xsl:variable name="source" as="xs:anyURI" select="base-uri($href)"/>
+
+    <xsl:sequence
+      select="if (starts-with($href, '#'))
+            then $source
+            else resolve-uri(tokenize($href, '#')[1], $source)"/>
+  </xsl:function>
+
   <xsl:function name="dita-ot:get-topic-id" as="xs:string?">
     <xsl:param name="href"/>
     <xsl:variable name="fragment" select="substring-after($href, '#')" as="xs:string"/>
@@ -408,7 +433,29 @@
       <xsl:with-param name="src" select="tokenize($uri, '/')"/>
     </xsl:call-template>
   </xsl:function>
-  
+
+  <xsl:function name="dita-ot:get-closest-topic" as="element()">
+    <xsl:param name="n" as="node()"/>
+
+    <xsl:sequence
+      select="$n/ancestor-or-self::*[contains(@class, ' topic/topic ')][1]"/>
+  </xsl:function>
+
+  <xsl:function name="dita-ot:retrieve-href-target" as="node()?">
+    <xsl:param name="href" as="attribute(href)"/>
+
+    <xsl:variable name="doc" as="document-node()"
+      select="doc(dita-ot:resolve-href-path($href))"/>
+
+    <xsl:sequence
+      select="if (dita-ot:has-element-id($href))
+            then key('id', dita-ot:get-element-id($href), $doc)
+                 [dita-ot:get-closest-topic(.)/@id eq dita-ot:get-topic-id($href)]
+            else if (dita-ot:has-topic-id($href) and not(dita-ot:has-element-id($href)))
+               then key('id', dita-ot:get-topic-id($href), $doc)
+            else $doc"/>
+  </xsl:function>
+
   <xsl:template name="dita-ot:normalize-uri" as="xs:string">
     <xsl:param name="src" as="xs:string*"/>
     <xsl:param name="res" select="()" as="xs:string*"/>

@@ -26,19 +26,19 @@ import org.xml.sax.SAXException;
 abstract class ImportAction implements IAction {
 
     /** Action values. */
-    protected final Set<String> valueSet;
+    final Set<String> valueSet;
     /** Action parameters. */
-    protected final Hashtable<String,String> paramTable;
-    protected DITAOTLogger logger;
+    final Hashtable<String,String> paramTable;
+    private DITAOTLogger logger;
     /** Plug-in features. */
-    protected Map<String, Features> featureTable = null;
+    Map<String, Features> featureTable = null;
 
     /**
      * Default Constructor.
      */
-    public ImportAction() {
-        valueSet = new LinkedHashSet<String>(16);
-        paramTable = new Hashtable<String,String>();
+    ImportAction() {
+        valueSet = new LinkedHashSet<>(16);
+        paramTable = new Hashtable<>();
     }
 
     @Override

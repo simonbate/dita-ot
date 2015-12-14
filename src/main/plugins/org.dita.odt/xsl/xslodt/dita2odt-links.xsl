@@ -124,8 +124,8 @@
         </xsl:variable>
         <xsl:if test="not($titlePrefix = '')">
         	<!-- 
-            <xsl:call-template name="insertVariable">
-                <xsl:with-param name="theVariableID" select="$titlePrefix"/>
+            <xsl:call-template name="getVariable">
+                <xsl:with-param name="id" select="$titlePrefix"/>
             </xsl:call-template>
         	-->
         </xsl:if>
@@ -151,9 +151,9 @@
 
     <xsl:template match="*[contains(@class, ' topic/fig ')][*[contains(@class, ' topic/title ')]]" mode="retrieveReferenceTitle">
       <!-- 
-    	<xsl:call-template name="insertVariable">
-            <xsl:with-param name="theVariableID" select="'Figure'"/>
-            <xsl:with-param name="theParameters">
+    	<xsl:call-template name="getVariable">
+            <xsl:with-param name="id" select="'Figure'"/>
+            <xsl:with-param name="params">
                 <text:span>
                     <xsl:value-of select="count(preceding::*[contains(@class, ' topic/fig ')][child::*[contains(@class, ' topic/title ')]]) + 1"/>
                 </text:span>
@@ -181,9 +181,9 @@
 
     <xsl:template match="*[contains(@class, ' topic/table ')][*[contains(@class, ' topic/title ')]]" mode="retrieveReferenceTitle">
         <!-- 
-    	<xsl:call-template name="insertVariable">
-            <xsl:with-param name="theVariableID" select="'Table'"/>
-            <xsl:with-param name="theParameters">
+    	<xsl:call-template name="getVariable">
+            <xsl:with-param name="id" select="'Table'"/>
+            <xsl:with-param name="params">
                 <text:span>
                     <xsl:value-of select="count(preceding::*[contains(@class, ' topic/table ')][child::*[contains(@class, ' topic/title ')]]) + 1"/>
                 </text:span>
@@ -203,14 +203,14 @@
 
     <xsl:template match="*[contains(@class, ' topic/li ')]" mode="retrieveReferenceTitle">
         <!-- 
-    	<xsl:call-template name="insertVariable">
-            <xsl:with-param name="theVariableID" select="'List item'"/>
+    	<xsl:call-template name="getVariable">
+            <xsl:with-param name="id" select="'List item'"/>
         </xsl:call-template>
         -->
     	<text:p text:style-name="Default_20_Text">
     		<text:span text:style-name="bold">
-    			<xsl:call-template name="getString">
-    				<xsl:with-param name="stringName" select="'List item'"/>
+    			<xsl:call-template name="getVariable">
+    				<xsl:with-param name="id" select="'List item'"/>
     			</xsl:call-template>
     		</text:span>
     	</text:p>
@@ -220,14 +220,14 @@
 
     <xsl:template match="*[contains(@class, ' topic/fn ')]" mode="retrieveReferenceTitle">
 		<!-- 
-    	<xsl:call-template name="insertVariable">
-		    <xsl:with-param name="theVariableID" select="'Foot note'"/>
+    	<xsl:call-template name="getVariable">
+		    <xsl:with-param name="id" select="'Foot note'"/>
 		</xsl:call-template>
 		-->
     	<text:p text:style-name="Default_20_Text">
     		<text:span text:style-name="bold">
-    			<xsl:call-template name="getString">
-    				<xsl:with-param name="stringName" select="'Foot note'"/>
+    			<xsl:call-template name="getVariable">
+    				<xsl:with-param name="id" select="'Foot note'"/>
     			</xsl:call-template>
     		</text:span>
     	</text:p>
@@ -356,13 +356,13 @@
             <xsl:if test="normalize-space($linkTextContent)!=''">
             	<text:p text:style-name="Default_20_Text">
                 	<!-- 
-					<xsl:call-template name="insertVariable">
-		    				<xsl:with-param name="theVariableID" select="'Related Links'"/>
+					<xsl:call-template name="getVariable">
+		    				<xsl:with-param name="id" select="'Related Links'"/>
 			    	</xsl:call-template>
                 	-->
                 	<text:span text:style-name="bold">
-                		<xsl:call-template name="getString">
-                			<xsl:with-param name="stringName" select="'Related Links'"/>
+                		<xsl:call-template name="getVariable">
+                			<xsl:with-param name="id" select="'Related Links'"/>
                 		</xsl:call-template>
                 	</text:span>
             		<!-- 
@@ -527,9 +527,9 @@
             <xsl:when test="not($element) or ($destination = '')"/>
             <xsl:when test="$isTitleEmpty">
             	<!-- 
-                    <xsl:call-template name="insertVariable">
-                        <xsl:with-param name="theVariableID" select="'Page'"/>
-                        <xsl:with-param name="theParameters">
+                    <xsl:call-template name="getVariable">
+                        <xsl:with-param name="id" select="'Page'"/>
+                        <xsl:with-param name="params">
                             <pagenum>
                                 <fo:inline>
                                     <fo:page-number-citation ref-id="{$destination}"/>
@@ -539,8 +539,8 @@
                     </xsl:call-template>
             	-->
             	<text:s/>
-            	<xsl:call-template name="getString">
-            		<xsl:with-param name="stringName" select="'Page'"/>
+            	<xsl:call-template name="getVariable">
+            		<xsl:with-param name="id" select="'Page'"/>
             	</xsl:call-template>
             	<text:s/>
             	<text:bookmark-ref text:reference-format="page" text:ref-name="{$destination}">
@@ -548,9 +548,9 @@
             </xsl:when>
             <xsl:otherwise>
             	<!-- 
-                    <xsl:call-template name="insertVariable">
-                        <xsl:with-param name="theVariableID" select="'On the page'"/>
-                        <xsl:with-param name="theParameters">
+                    <xsl:call-template name="getVariable">
+                        <xsl:with-param name="id" select="'On the page'"/>
+                        <xsl:with-param name="params">
                         	<xsl:element name="text:bookmark-ref">
                         		<xsl:attribute name="text:reference-format">page</xsl:attribute>
                         		<xsl:attribute name="text:ref-name"><xsl:value-of select="$destination"/></xsl:attribute>
@@ -559,8 +559,8 @@
                     </xsl:call-template>
             	-->
             	<text:s/>
-            	<xsl:call-template name="getString">
-            		<xsl:with-param name="stringName" select="'On the page'"/>
+            	<xsl:call-template name="getVariable">
+            		<xsl:with-param name="id" select="'On the page'"/>
             	</xsl:call-template>
             	<text:s/>
             	<text:bookmark-ref text:reference-format="page" text:ref-name="{$destination}">
@@ -636,56 +636,56 @@
 
 			<xsl:variable name="relatedConceptsTitle">
 				<!-- 
-				<xsl:call-template name="insertVariable">
-					<xsl:with-param name="theVariableID" select="'Related concepts'"/>
+				<xsl:call-template name="getVariable">
+					<xsl:with-param name="id" select="'Related concepts'"/>
 				</xsl:call-template>
 				-->
 				<text:p text:style-name="Default_20_Text">
 					<text:span text:style-name="bold">
-						<xsl:call-template name="getString">
-							<xsl:with-param name="stringName" select="'Related concepts'"/>
+						<xsl:call-template name="getVariable">
+							<xsl:with-param name="id" select="'Related concepts'"/>
 						</xsl:call-template>
 					</text:span>
 				</text:p>
 			</xsl:variable>
 			<xsl:variable name="relatedTasksTitle">
 				<!-- 
-				<xsl:call-template name="insertVariable">
-					<xsl:with-param name="theVariableID" select="'Related tasks'"/>
+				<xsl:call-template name="getVariable">
+					<xsl:with-param name="id" select="'Related tasks'"/>
 				</xsl:call-template>
 				-->
 				<text:p text:style-name="Default_20_Text">
 					<text:span text:style-name="bold">
-						<xsl:call-template name="getString">
-							<xsl:with-param name="stringName" select="'Related tasks'"/>
+						<xsl:call-template name="getVariable">
+							<xsl:with-param name="id" select="'Related tasks'"/>
 						</xsl:call-template>
 					</text:span>
 				</text:p>
 			</xsl:variable>
 			<xsl:variable name="relatedReferencesTitle">
 				<!-- 
-				<xsl:call-template name="insertVariable">
-					<xsl:with-param name="theVariableID" select="'Related references'"/>
+				<xsl:call-template name="getVariable">
+					<xsl:with-param name="id" select="'Related references'"/>
 				</xsl:call-template>
 				-->
 				<text:p text:style-name="Default_20_Text">
 					<text:span text:style-name="bold">
-						<xsl:call-template name="getString">
-							<xsl:with-param name="stringName" select="'Related references'"/>
+						<xsl:call-template name="getVariable">
+							<xsl:with-param name="id" select="'Related references'"/>
 						</xsl:call-template>
 					</text:span>
 				</text:p>
 			</xsl:variable>
 			<xsl:variable name="relatedInformationTitle">
 				<!-- 
-				<xsl:call-template name="insertVariable">
-					<xsl:with-param name="theVariableID" select="'Related information'"/>
+				<xsl:call-template name="getVariable">
+					<xsl:with-param name="id" select="'Related information'"/>
 				</xsl:call-template>
 				-->
 				<text:p text:style-name="Default_20_Text">
 					<text:span text:style-name="bold">
-						<xsl:call-template name="getString">
-							<xsl:with-param name="stringName" select="'Related information'"/>
+						<xsl:call-template name="getVariable">
+							<xsl:with-param name="id" select="'Related information'"/>
 						</xsl:call-template>
 					</text:span>
 				</text:p>
@@ -884,14 +884,14 @@
 		<!-- Creating relationships to the parent -->
 		<xsl:variable name="linksTitle">
 			<!-- 
-			<xsl:call-template name="insertVariable">
-				<xsl:with-param name="theVariableID" select="'Parent topic'"/>
+			<xsl:call-template name="getVariable">
+				<xsl:with-param name="id" select="'Parent topic'"/>
 			</xsl:call-template>
 			-->
 			<text:p text:style-name="Default_20_Text">
 				<text:span text:style-name="bold">
-					<xsl:call-template name="getString">
-						<xsl:with-param name="stringName" select="'Parent topic'"/>
+					<xsl:call-template name="getVariable">
+						<xsl:with-param name="id" select="'Parent topic'"/>
 					</xsl:call-template>
 				</text:span>
 			</text:p>
@@ -906,14 +906,14 @@
 		<!-- Creating relationships to the next sibling -->
 		<xsl:variable name="linksTitle">
 			<!-- 
-			<xsl:call-template name="insertVariable">
-				<xsl:with-param name="theVariableID" select="'Next topic'"/>
+			<xsl:call-template name="getVariable">
+				<xsl:with-param name="id" select="'Next topic'"/>
 			</xsl:call-template>
 			-->
 			<text:p text:style-name="Default_20_Text">
 				<text:span text:style-name="bold">
-					<xsl:call-template name="getString">
-						<xsl:with-param name="stringName" select="'Next topic'"/>
+					<xsl:call-template name="getVariable">
+						<xsl:with-param name="id" select="'Next topic'"/>
 					</xsl:call-template>
 				</text:span>
 			</text:p>
@@ -928,14 +928,14 @@
 		<!-- Creating relationships to the previous sibling -->
 		<xsl:variable name="linksTitle">
 			<!-- 
-			<xsl:call-template name="insertVariable">
-				<xsl:with-param name="theVariableID" select="'Previous topic'"/>
+			<xsl:call-template name="getVariable">
+				<xsl:with-param name="id" select="'Previous topic'"/>
 			</xsl:call-template>
 			-->
 			<text:p text:style-name="Default_20_Text">
 				<text:span text:style-name="bold">
-					<xsl:call-template name="getString">
-						<xsl:with-param name="stringName" select="'Previous topic'"/>
+					<xsl:call-template name="getVariable">
+						<xsl:with-param name="id" select="'Previous topic'"/>
 					</xsl:call-template>
 				</text:span>
 			</text:p>
@@ -951,14 +951,14 @@
 		<xsl:param name="listType"/>
 		<xsl:variable name="linksTitle">
 			<!-- 
-			<xsl:call-template name="insertVariable">
-				<xsl:with-param name="theVariableID" select="'Child topics'"/>
+			<xsl:call-template name="getVariable">
+				<xsl:with-param name="id" select="'Child topics'"/>
 			</xsl:call-template>
 			-->
 			<text:p text:style-name="Default_20_Text">
 				<text:span text:style-name="bold">
-					<xsl:call-template name="getString">
-						<xsl:with-param name="stringName" select="'Child topics'"/>
+					<xsl:call-template name="getVariable">
+						<xsl:with-param name="id" select="'Child topics'"/>
 					</xsl:call-template>
 				</text:span>
 			</text:p>
@@ -1015,14 +1015,14 @@
 			<xsl:for-each select="$nodeSet">
 				<text:list-item>
 						<!-- 
-							<xsl:call-template name="insertVariable">
-							<xsl:with-param name="theVariableID" select="'Unordered List bullet'"/>
+							<xsl:call-template name="getVariable">
+							<xsl:with-param name="id" select="'Unordered List bullet'"/>
 							</xsl:call-template>
 						-->
 						<text:p text:style-name="Default_20_Text">
 							<text:span text:style-name="bold">
-								<xsl:call-template name="getString">
-									<xsl:with-param name="stringName" select="'Unordered List bullet'"/>
+								<xsl:call-template name="getVariable">
+									<xsl:with-param name="id" select="'Unordered List bullet'"/>
 								</xsl:call-template>
 							</text:span>
 						</text:p>
@@ -1161,8 +1161,8 @@
 		<xsl:if test="descendant::*[contains(@class, ' topic/link ')][not(ancestor::*[contains(@class, ' topic/linklist ')])][@importance='required' and (not(@role) or @role='sibling' or @role='friend' or @role='previous' or @role='cousin')]">
 			<text:p>
 				<text:span text:style-name="default_text_style">
-					<xsl:call-template name="getString">
-						<xsl:with-param name="stringName" select="'Prerequisites'"/>
+					<xsl:call-template name="getVariable">
+						<xsl:with-param name="id" select="'Prerequisites'"/>
 					</xsl:call-template>
 				</text:span>
 			</text:p>

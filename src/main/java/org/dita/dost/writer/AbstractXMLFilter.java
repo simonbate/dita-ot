@@ -7,6 +7,10 @@ package org.dita.dost.writer;
 import static java.util.Arrays.asList;
 
 import java.io.File;
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.dita.dost.exception.DITAOTException;
 import org.dita.dost.log.DITAOTLogger;
@@ -24,11 +28,15 @@ import org.xml.sax.helpers.XMLFilterImpl;
 public abstract class AbstractXMLFilter extends XMLFilterImpl implements AbstractWriter {
 
     protected DITAOTLogger logger;
-    protected Job job;
+    Job job;
+    /** Absolute system path to file being processed */
+    protected URI currentFile;
+    protected Map<String, String> params = new HashMap<>();
 
     @Override
     public void write(final File filename) throws DITAOTException {
-        XMLUtils.transform(filename, asList((XMLFilter) this));
+        assert filename.isAbsolute();
+        XMLUtils.transform(filename, Collections.singletonList((XMLFilter) this));
     }
 
     @Override
@@ -41,4 +49,12 @@ public abstract class AbstractXMLFilter extends XMLFilterImpl implements Abstrac
         this.job = job;
     }
 
+    public void setCurrentFile(final URI currentFile) {
+        assert currentFile.isAbsolute();
+        this.currentFile = currentFile;
+    }
+
+    public void setParam(final String name, final String value) {
+        params.put(name, value);
+    }
 }
