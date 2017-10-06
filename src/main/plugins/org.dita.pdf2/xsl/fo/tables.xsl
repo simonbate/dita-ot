@@ -1,3 +1,10 @@
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2006 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:opentopic-func="http://www.idiominc.com/opentopic/exsl/function"
   xmlns:fo="http://www.w3.org/1999/XSL/Format"
@@ -19,6 +26,8 @@
     <xsl:variable name="table.colsep-default" select="'0'"/>
 
     <!--Definition list-->
+    <xsl:template match="*[contains(@class,' topic/dl ')][empty(*[contains(@class,' topic/dlentry ')])]" priority="10"/>
+    
     <xsl:template match="*[contains(@class, ' topic/dl ')]">
         <xsl:apply-templates select="*[contains(@class,' ditaot-d/ditaval-startprop ')]" mode="outofline"/>
         <fo:table xsl:use-attribute-sets="dl">
@@ -39,6 +48,9 @@
         </fo:table>
         <xsl:apply-templates select="*[contains(@class,' ditaot-d/ditaval-endprop ')]" mode="outofline"/>
     </xsl:template>
+    
+    <xsl:template match="*[contains(@class,' topic/dlhead ')]
+        [empty(*[contains(@class,' topic/dthd ')] | *[contains(@class,' topic/ddhd ')])]" priority="10"/>
 
     <xsl:template match="*[contains(@class, ' topic/dl ')]/*[contains(@class, ' topic/dlhead ')]">
         <fo:table-header xsl:use-attribute-sets="dl.dlhead">
@@ -74,9 +86,11 @@
             <xsl:call-template name="commonattributes"/>
             <fo:table-cell xsl:use-attribute-sets="dlentry.dt">
                 <xsl:apply-templates select="*[contains(@class, ' topic/dt ')]"/>
+                <xsl:if test="empty(*[contains(@class, ' topic/dt ')])"><fo:block/></xsl:if>
             </fo:table-cell>
             <fo:table-cell xsl:use-attribute-sets="dlentry.dd">
                 <xsl:apply-templates select="*[contains(@class, ' topic/dd ')]"/>
+                <xsl:if test="empty(*[contains(@class, ' topic/dd ')])"><fo:block/></xsl:if>
             </fo:table-cell>
         </fo:table-row>
     </xsl:template>
@@ -202,6 +216,19 @@
                                                     '+-0123456789.'))"/>
   </xsl:function>
   
+  <xsl:function name="dita-ot:get-entry-end-position" as="xs:integer">
+    <xsl:param name="thisentry" as="element()"/>
+    <xsl:choose>
+      <xsl:when test="$thisentry/@dita-ot:x and $thisentry/@dita-ot:morecols">
+        <xsl:sequence select="xs:integer($thisentry/@dita-ot:x) + xs:integer($thisentry/@dita-ot:morecols)"/>
+      </xsl:when>
+      <xsl:when test="$thisentry/@dita-ot:x">
+        <xsl:sequence select="xs:integer($thisentry/@dita-ot:x)"/>
+      </xsl:when>
+      <xsl:otherwise>0</xsl:otherwise>
+    </xsl:choose>
+  </xsl:function>
+  
   <xsl:function name="dita-ot:get-unit">
     <xsl:param name="width" as="xs:string"/>
     <xsl:value-of select="normalize-space(translate($width,
@@ -249,20 +276,22 @@
             <xsl:call-template name="getTableScale"/>
         </xsl:variable>
 
-        <fo:block xsl:use-attribute-sets="table">
-            <xsl:call-template name="commonattributes"/>
-            <xsl:if test="not(@id)">
-              <xsl:attribute name="id">
-                <xsl:call-template name="get-id"/>
-              </xsl:attribute>
-            </xsl:if>
-            <xsl:if test="exists($scale)">
-                <xsl:attribute name="font-size" select="concat($scale, '%')"/>
-            </xsl:if>
-            <xsl:apply-templates select="*[contains(@class,' ditaot-d/ditaval-startprop ')]" mode="outofline"/>
-            <xsl:apply-templates/>
-            <xsl:apply-templates select="*[contains(@class,' ditaot-d/ditaval-endprop ')]" mode="outofline"/>
-        </fo:block>
+        <fo:block-container xsl:use-attribute-sets="table__container">
+            <fo:block xsl:use-attribute-sets="table">
+                <xsl:call-template name="commonattributes"/>
+                <xsl:if test="not(@id)">
+                  <xsl:attribute name="id">
+                    <xsl:call-template name="get-id"/>
+                  </xsl:attribute>
+                </xsl:if>
+                <xsl:if test="exists($scale)">
+                    <xsl:attribute name="font-size" select="concat($scale, '%')"/>
+                </xsl:if>
+                <xsl:apply-templates select="*[contains(@class,' ditaot-d/ditaval-startprop ')]" mode="outofline"/>
+                <xsl:apply-templates/>
+                <xsl:apply-templates select="*[contains(@class,' ditaot-d/ditaval-endprop ')]" mode="outofline"/>
+            </fo:block>
+        </fo:block-container>
     </xsl:template>
 
     <xsl:template match="*[contains(@class, ' topic/table ')]/*[contains(@class, ' topic/title ')]">
@@ -272,7 +301,7 @@
                 <xsl:with-param name="id" select="'Table.title'"/>
                 <xsl:with-param name="params">
                     <number>
-                        <xsl:value-of select="count(key('enumerableByClass', 'topic/table')[. &lt;&lt; current()])"/>
+                      <xsl:apply-templates select="." mode="table.title-number"/>
                     </number>
                     <title>
                         <xsl:apply-templates/>
@@ -281,12 +310,15 @@
             </xsl:call-template>
         </fo:block>
     </xsl:template>
+  
+  <xsl:template match="*[contains(@class, ' topic/table ')]/*[contains(@class, ' topic/title ')]" mode="table.title-number">
+    <xsl:value-of select="count(key('enumerableByClass', 'topic/table')[. &lt;&lt; current()])"/>
+  </xsl:template>
 
     <xsl:template match="*[contains(@class, ' topic/tgroup ')]" name="tgroup">
         <xsl:if test="not(@cols)">
           <xsl:call-template name="output-message">
-            <xsl:with-param name="msgnum">006</xsl:with-param>
-            <xsl:with-param name="msgsev">E</xsl:with-param>
+            <xsl:with-param name="id" select="'PDFX006E'"/>
           </xsl:call-template>
         </xsl:if>
 
@@ -380,7 +412,16 @@
         </fo:table-row>
     </xsl:template>
 
+    <xsl:template match="*[contains(@class, ' topic/entry ')]" mode="validate-entry-position">
+        <xsl:if test="dita-ot:get-entry-end-position(.) gt number(ancestor::*[contains(@class,' topic/tgroup ')][1]/@cols)">
+            <xsl:call-template name="output-message">
+                <xsl:with-param name="id" select="'PDFX012E'"/>
+            </xsl:call-template>
+        </xsl:if>
+    </xsl:template>
+
     <xsl:template match="*[contains(@class, ' topic/thead ')]/*[contains(@class, ' topic/row ')]/*[contains(@class, ' topic/entry ')]">
+        <xsl:apply-templates select="." mode="validate-entry-position"/>
         <fo:table-cell xsl:use-attribute-sets="thead.row.entry">
             <xsl:call-template name="commonattributes"/>
             <xsl:call-template name="applySpansAttrs"/>
@@ -395,6 +436,7 @@
     </xsl:template>
 
     <xsl:template match="*[contains(@class, ' topic/tbody ')]/*[contains(@class, ' topic/row ')]/*[contains(@class, ' topic/entry ')]">
+        <xsl:apply-templates select="." mode="validate-entry-position"/>
         <xsl:choose>
             <xsl:when test="ancestor::*[contains(@class, ' topic/table ')][1]/@rowheader = 'firstcol'
                         and empty(preceding-sibling::*[contains(@class, ' topic/entry ')])">
@@ -423,8 +465,8 @@
     </xsl:template>
 
     <xsl:template name="processEntryContent">
-      <xsl:variable name="entryNumber" select="@dita-ot:x" as="xs:integer"/>
-        <xsl:variable name="colspec" select="ancestor::*[contains(@class, ' topic/tgroup ')][1]/*[contains(@class, ' topic/colspec ')][position() = $entryNumber]"/>
+      <xsl:variable name="entryNumber" select="@dita-ot:x" as="xs:integer?"/>
+        <xsl:variable name="colspec" select="ancestor::*[contains(@class, ' topic/tgroup ')][1]/*[contains(@class, ' topic/colspec ')][position() = $entryNumber]" as="element()?"/>
         <xsl:variable name="char" as="xs:string?">
             <xsl:choose>
                 <xsl:when test="@char">
@@ -473,12 +515,12 @@
                     provisional-distance-between-starts="{concat($charoff, '%')}">
                     <fo:list-item>
                         <fo:list-item-label end-indent="label-end()">
-                            <fo:block text-align="right">
+                            <fo:block text-align="end">
                                 <xsl:copy-of select="$text-before"/>
                             </fo:block>
                         </fo:list-item-label>
                         <fo:list-item-body start-indent="body-start()">
-                            <fo:block text-align="left">
+                            <fo:block text-align="start">
                                 <xsl:copy-of select="$text-after"/>
                             </fo:block>
                         </fo:list-item-body>
@@ -749,6 +791,12 @@
           </xsl:choose>
         </xsl:variable>
 
+        <xsl:if test="$element/@expanse">
+          <xsl:for-each select="$element">
+            <xsl:call-template name="setExpanse"/>
+          </xsl:for-each>
+        </xsl:if>
+
         <xsl:choose>
             <xsl:when test="$frame = 'all'">
                 <xsl:call-template name="processAttrSetReflection">
@@ -835,16 +883,29 @@
             </xsl:apply-templates>
 
             <fo:table-body xsl:use-attribute-sets="simpletable__body">
-                <xsl:apply-templates select="*[contains(@class, ' topic/strow ')]">
-                    <xsl:with-param name="number-cells" select="$number-cells"/>
-                </xsl:apply-templates>
+                <xsl:choose>
+                  <xsl:when test="empty(*[contains(@class, ' topic/strow ')])">
+                    <fo:table-row>
+                        <fo:table-cell>
+                            <fo:block/>
+                        </fo:table-cell>
+                    </fo:table-row>
+                  </xsl:when>
+                  <xsl:otherwise>
+                    <xsl:apply-templates select="*[contains(@class, ' topic/strow ')]">
+                        <xsl:with-param name="number-cells" select="$number-cells"/>
+                    </xsl:apply-templates>
+                  </xsl:otherwise>
+                </xsl:choose>
             </fo:table-body>
 
         </fo:table>
         <xsl:apply-templates select="*[contains(@class,' ditaot-d/ditaval-endprop ')]" mode="outofline"/>
     </xsl:template>
   
-    <xsl:template match="*[contains(@class, ' topic/simpletable ')][empty(*)]" priority="10"/>
+    <xsl:template match="*[contains(@class,' topic/simpletable ')]
+        [empty(*[contains(@class,' topic/strow ')]/*[contains(@class,' topic/stentry ')])]" priority="10"/>
+    <xsl:template match="*[contains(@class,' topic/strow ') or contains(@class,' topic/sthead ')][empty(*[contains(@class,' topic/stentry ')])]" priority="10"/>
 
     <xsl:template name="createSimpleTableColumns">
         <xsl:param name="theColumnWidthes" as="xs:string"/>

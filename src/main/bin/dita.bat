@@ -1,7 +1,7 @@
 @echo off
 
 REM This file is part of the DITA Open Toolkit project.
-REM See the accompanying license.txt file for applicable licenses.
+REM See the accompanying LICENSE file for applicable license.
 
 REM Derived from Apache Ant command line tool.
 
@@ -27,7 +27,7 @@ if "%DITA_HOME%"=="" goto setDefaultDitaHome
 
 :setDefaultDitaHome
 rem %~dp0 is expanded pathname of the current script under NT
-set DITA_HOME="%~dp0.."
+set DITA_HOME=%~dp0..
 
 rem Slurp the command line arguments. This loop allows for an unlimited number
 rem of arguments (up to the command line limit, anyway).
@@ -45,7 +45,7 @@ rem and for NT handling to skip to.
 
 :checkJava
 rem Set environment variables
-call "%DITA_HOME%\resources\env.bat"
+call "%DITA_HOME%\config\env.bat"
 
 set _JAVACMD=%JAVACMD%
 
@@ -57,7 +57,7 @@ if "%_JAVACMD%" == "" set _JAVACMD=%JAVA_HOME%\bin\java.exe
 if "%_JAVACMD%" == "" set _JAVACMD=java.exe
 
 :runAnt
-"%_JAVACMD%" %ANT_OPTS% -classpath "%DITA_HOME%\lib\ant-launcher.jar" "-Dant.home=%DITA_HOME%"  "-Ddita.dir=%DITA_HOME%" org.apache.tools.ant.launch.Launcher %ANT_ARGS% -cp "%CLASSPATH%" %DITA_CMD_LINE_ARGS% -buildfile "%DITA_HOME%\build.xml" -main "org.dita.dost.invoker.Main"
+"%_JAVACMD%" %ANT_OPTS% -Djava.awt.headless=true -classpath "%DITA_HOME%\lib\ant-launcher.jar;%DITA_HOME%\config" "-Dant.home=%DITA_HOME%"  "-Ddita.dir=%DITA_HOME%" org.apache.tools.ant.launch.Launcher %ANT_ARGS% -cp "%CLASSPATH%" %DITA_CMD_LINE_ARGS% -buildfile "%DITA_HOME%\build.xml" -main "org.dita.dost.invoker.Main"
 rem Check the error code of the Ant build
 if not "%OS%"=="Windows_NT" goto onError
 set ANT_ERROR=%ERRORLEVEL%

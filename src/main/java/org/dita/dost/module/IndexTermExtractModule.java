@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005, 2006 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005, 2006 All Rights Reserved.
  */
 package org.dita.dost.module;
 
@@ -13,6 +13,7 @@ import static org.dita.dost.util.Constants.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import org.dita.dost.exception.DITAOTException;
@@ -40,18 +41,18 @@ import org.xml.sax.XMLReader;
  * 
  * @author Wu, Zhi Qiang
  */
-final class IndexTermExtractModule extends AbstractPipelineModuleImpl {
+public class IndexTermExtractModule extends AbstractPipelineModuleImpl {
     /** The input map */
-    private String inputMap = null;
+    private File inputMap = null;
 
     /** The extension of the target file */
     private String targetExt = null;
 
     /** The list of topics */
-    private List<String> topicList = null;
+    private List<URI> topicList = null;
 
     /** The list of ditamap files */
-    private List<String> ditamapList = null;
+    private List<URI> ditamapList = null;
 
     private IndexTermCollection indexTermCollection;
 
@@ -67,13 +68,15 @@ final class IndexTermExtractModule extends AbstractPipelineModuleImpl {
         if (logger == null) {
             throw new IllegalStateException("Logger not set");
         }
-        indexTermCollection = IndexTermCollection.getInstantce();
+        indexTermCollection = new IndexTermCollection();
+        indexTermCollection.setLogger(logger);
         try {
-            indexTermCollection.clear();
             parseAndValidateInput(input);
             extractIndexTerm();
             indexTermCollection.sort();
             indexTermCollection.outputTerms();
+        } catch (final RuntimeException e) {
+            throw e;
         } catch (final Exception e) {
             logger.error(e.getMessage(), e) ;
         }
@@ -90,7 +93,7 @@ final class IndexTermExtractModule extends AbstractPipelineModuleImpl {
         final String encoding = input.getAttribute(ANT_INVOKER_EXT_PARAM_ENCODING);
         final String indextype = input.getAttribute(ANT_INVOKER_EXT_PARAM_INDEXTYPE);
         final String indexclass = input.getAttribute(ANT_INVOKER_EXT_PARAM_INDEXCLASS);
-        inputMap = input.getAttribute(ANT_INVOKER_PARAM_INPUTMAP);
+        inputMap = new File(job.tempDirURI.resolve(job.getInputMap()));
         targetExt = input.getAttribute(ANT_INVOKER_EXT_PARAM_TARGETEXT);
 
         /*
@@ -99,13 +102,13 @@ final class IndexTermExtractModule extends AbstractPipelineModuleImpl {
         topicList = new ArrayList<>();
         for (final FileInfo f: job.getFileInfo()) {
             if (ATTR_FORMAT_VALUE_DITA.equals(f.format) && !f.isResourceOnly) {
-                topicList.add(f.file.getPath());
+                topicList.add(job.tempDirURI.resolve(f.uri));
             }
         }
         ditamapList = new ArrayList<>();
         for (final FileInfo f: job.getFileInfo()) {
             if (ATTR_FORMAT_VALUE_DITAMAP.equals(f.format) && !f.isResourceOnly) {
-                ditamapList.add(f.file.getPath());
+                ditamapList.add(job.tempDirURI.resolve(f.uri));
             }
         }
 
@@ -125,8 +128,6 @@ final class IndexTermExtractModule extends AbstractPipelineModuleImpl {
     }
 
     private void extractIndexTerm() throws SAXException {
-        final int topicNum = topicList.size();
-        final int ditamapNum = ditamapList.size();
         FileInputStream inputStream = null;
         XMLReader xmlReader = null;
         final IndexTermReader handler = new IndexTermReader(indexTermCollection);
@@ -139,14 +140,17 @@ final class IndexTermExtractModule extends AbstractPipelineModuleImpl {
         try {
             xmlReader.setContentHandler(handler);
 
-            for (String aTopicList : topicList) {
-                String target;
+            final FileInfo fileInfo = job.getFileInfo(job.getInputFile());
+            final URI tempInputMap = job.tempDirURI.resolve(fileInfo.uri);
+            for (final URI aTopicList : topicList) {
+                URI target;
                 String targetPathFromMap;
                 String targetPathFromMapWithoutExt;
                 handler.reset();
                 target = aTopicList;
                 targetPathFromMap = FileUtils.getRelativeUnixPath(
-                        inputMap, target);
+                        tempInputMap.toString(),
+                        target.toString());
                 targetPathFromMapWithoutExt = targetPathFromMap
                         .substring(0, targetPathFromMap.lastIndexOf("."));
                 handler.setTargetFile(targetPathFromMapWithoutExt + targetExt);
@@ -154,25 +158,27 @@ final class IndexTermExtractModule extends AbstractPipelineModuleImpl {
                 try {
                     /*if(!new File(job.tempDir, target).exists()){
                         logger.logWarn("Cannot find file "+ target);
-						continue;
-					}*/
+                        continue;
+                    }*/
                     inputStream = new FileInputStream(
-                            new File(job.tempDir, target));
+                            new File(target));
                     xmlReader.parse(new InputSource(inputStream));
                     inputStream.close();
+                } catch (final RuntimeException e) {
+                    throw e;
                 } catch (final Exception e) {
                     final StringBuilder buff = new StringBuilder();
                     String msg = null;
-                    msg = MessageUtils.getInstance().getMessage("DOTJ013E", target).toString();
+                    msg = MessageUtils.getMessage("DOTJ013E", target.toString()).toString();
                     logger.error(buff.append(msg).append(e.getMessage()).toString());
                 }
             }
 
             xmlReader.setContentHandler(ditamapIndexTermReader);
 
-            for (final String ditamap : ditamapList) {
+            for (final URI ditamap : ditamapList) {
                 final String currentMapPathName = FileUtils.getRelativeUnixPath(
-                        inputMap, ditamap);
+                        tempInputMap.toString(), ditamap.toString());
                 String mapPathFromInputMap = "";
 
                 if (currentMapPathName.lastIndexOf(SLASH) != -1) {
@@ -184,15 +190,16 @@ final class IndexTermExtractModule extends AbstractPipelineModuleImpl {
                 try {
                     /*if(!new File(job.tempDir, ditamap).exists()){
                         logger.logWarn("Cannot find file "+ ditamap);
-						continue;
-					}*/
-                    inputStream = new FileInputStream(new File(job.tempDir,
-                            ditamap));
+                        continue;
+                    }*/
+                    inputStream = new FileInputStream(new File(ditamap));
                     xmlReader.parse(new InputSource(inputStream));
                     inputStream.close();
+                } catch (final RuntimeException e) {
+                    throw e;
                 } catch (final Exception e) {
                     String msg = null;
-                    msg = MessageUtils.getInstance().getMessage("DOTJ013E", ditamap).toString();
+                    msg = MessageUtils.getMessage("DOTJ013E", ditamap.toString()).toString();
                     logger.error(msg, e);
                 }
             }

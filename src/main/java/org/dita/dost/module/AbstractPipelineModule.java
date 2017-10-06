@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2004, 2005 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2004, 2005 All Rights Reserved.
  */
 package org.dita.dost.module;
 
@@ -13,13 +13,15 @@ import org.dita.dost.log.DITAOTLogger;
 import org.dita.dost.pipeline.AbstractPipelineInput;
 import org.dita.dost.pipeline.AbstractPipelineOutput;
 import org.dita.dost.util.Job;
+import org.dita.dost.util.Job.FileInfo;
+
+import java.util.function.Predicate;
 
 /**
  * Abstract class for Modules which contains the method that every module class
  * should implement.
- * 
+ *
  * @author Lian, Li
- * 
  */
 public interface AbstractPipelineModule {
 
@@ -27,7 +29,7 @@ public interface AbstractPipelineModule {
      * Start the process of this module with the input.
      * 
      * <p>{@link #setLogger(DITAOTLogger)} must be called before calling this method.</p>
-     * 
+     *
      * @param input input
      * @return output
      * @throws DITAOTException DITAOTException
@@ -37,11 +39,13 @@ public interface AbstractPipelineModule {
 
     /**
      * Set logger for module.
-     * 
+     *
      * @param logger logger to use for log message
      */
     void setLogger(DITAOTLogger logger);
 
     void setJob(Job job);
-    
+
+    void setFileInfoFilter(Predicate<FileInfo> fileInfoFilter);
+
 }

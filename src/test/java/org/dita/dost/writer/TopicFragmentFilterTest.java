@@ -1,6 +1,13 @@
+/*
+ * This file is part of the DITA Open Toolkit project.
+ *
+ * Copyright 2014 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
+ */
 package org.dita.dost.writer;
 
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
+import static org.dita.dost.TestUtils.assertXMLEqual;
 import static org.dita.dost.util.Constants.ATTRIBUTE_NAME_HREF;
 import static org.junit.Assert.*;
 
@@ -16,7 +23,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamSource;
 
-import org.custommonkey.xmlunit.XMLUnit;
 import org.dita.dost.TestUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -35,10 +41,7 @@ public class TopicFragmentFilterTest {
     
     @Before
     public void setUp() throws Exception {
-        tempDir = TestUtils.createTempDir(KeyrefPaserTest.class);
-        TestUtils.resetXMLUnit();
-        XMLUnit.setIgnoreWhitespace(true);
-        XMLUnit.setIgnoreComments(true);
+        tempDir = TestUtils.createTempDir(TopicFragmentFilterTest.class);
     }
 
     @After
@@ -53,8 +56,11 @@ public class TopicFragmentFilterTest {
                 
         final DOMResult dst = new DOMResult();
         TransformerFactory.newInstance().newTransformer().transform(new SAXSource(f, new InputSource(new File(srcDir, "topic.dita").toURI().toString())), dst);
-        
-        final Document exp = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new InputSource(new File(expDir, "topic.dita").toURI().toString()));
+
+        final DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+        builderFactory.setNamespaceAware(true);
+        builderFactory.setIgnoringComments(true);
+        final Document exp = builderFactory.newDocumentBuilder().parse(new File(expDir, "topic.dita"));
         assertXMLEqual(exp, (Document) dst.getNode());
     }
 

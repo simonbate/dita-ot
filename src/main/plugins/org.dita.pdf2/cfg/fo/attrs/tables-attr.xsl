@@ -27,8 +27,8 @@ These terms and conditions supersede the terms and conditions in any
 licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
-This file is part of the DITA Open Toolkit project hosted on Sourceforge.net.
-See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project.
+See the accompanying LICENSE file for applicable license.
 -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fo="http://www.w3.org/1999/XSL/Format" version="2.0">
@@ -72,9 +72,15 @@ See the accompanying license.txt file for applicable licenses.
   <xsl:attribute-set name="__tableframe__right" use-attribute-sets="common.border__right">
   </xsl:attribute-set>
 
+  <xsl:attribute-set name="table__container">
+    <xsl:attribute name="reference-orientation" select="if (@orient eq 'land') then 90 else 0"/>
+    <xsl:attribute name="start-indent">from-parent(start-indent)</xsl:attribute>
+  </xsl:attribute-set>
+
   <xsl:attribute-set name="table" use-attribute-sets="base-font">
     <!--It is a table container -->
     <xsl:attribute name="space-after">10pt</xsl:attribute>
+    <xsl:attribute name="start-indent">0pt</xsl:attribute>
   </xsl:attribute-set>
 
   <xsl:attribute-set name="table.tgroup">
@@ -135,7 +141,6 @@ See the accompanying license.txt file for applicable licenses.
 
   <xsl:attribute-set name="thead.row.entry">
     <!--head cell-->
-    <xsl:attribute name="background-color">antiquewhite</xsl:attribute>
   </xsl:attribute-set>
 
   <xsl:attribute-set name="thead.row.entry__content" use-attribute-sets="common.table.body.entry common.table.head.entry">
@@ -231,14 +236,12 @@ See the accompanying license.txt file for applicable licenses.
   </xsl:attribute-set>
 
   <xsl:attribute-set name="sthead.stentry__keycol-content" use-attribute-sets="common.table.body.entry common.table.head.entry">
-    <xsl:attribute name="background-color">antiquewhite</xsl:attribute>
   </xsl:attribute-set>
 
   <xsl:attribute-set name="strow.stentry__content" use-attribute-sets="common.table.body.entry">
   </xsl:attribute-set>
 
   <xsl:attribute-set name="strow.stentry__keycol-content" use-attribute-sets="common.table.body.entry common.table.head.entry">
-    <xsl:attribute name="background-color">antiquewhite</xsl:attribute>
   </xsl:attribute-set>
 
   <xsl:attribute-set name="strow.stentry">

@@ -26,8 +26,8 @@ These terms and conditions supersede the terms and conditions in any
 licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
-This file is part of the DITA Open Toolkit project hosted on Sourceforge.net. 
-See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project. 
+See the accompanying LICENSE file for applicable license.
 -->
 <vars xmlns="http://www.idiominc.com/opentopic/vars">
 
@@ -114,9 +114,21 @@ See the accompanying license.txt file for applicable licenses.
     <!-- The formatting used to display ordered lists (e.g., "1., 2." or 
          "1), 2)" -->
     <variable id="Ordered List Number"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Number 1"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Number 2"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Number 3"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Number 4"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Format 1">1</variable>
+    <variable id="Ordered List Format 2">a</variable>
+    <variable id="Ordered List Format 3">1</variable>
+    <variable id="Ordered List Format 4">a</variable>
 
     <!-- The unordered list bullet   -->
     <variable id="Unordered List bullet">•</variable>
+    <variable id="Unordered List bullet 1">•</variable>
+    <variable id="Unordered List bullet 2">•</variable>
+    <variable id="Unordered List bullet 3">•</variable>
+    <variable id="Unordered List bullet 4">•</variable>
 
     <!-- The heading string to put at the top of the Table of Contents -->
     <variable id="Table of Contents">Contents</variable>
@@ -177,14 +189,9 @@ See the accompanying license.txt file for applicable licenses.
          text in case it's not specified in source. -->
     <variable id="Cross-Reference">Cross-Reference to:</variable>
 
-    <!-- Default content-reference text prefix. Used to generate reference 
+    <!-- Prefix for unresolved content reference. Used to generate reference 
          text in case target cannot be resolved. -->
-    <variable id="Content-Reference">Content-Reference to:</variable>
-
-    <!-- Default title text for referenced section title. Used to generate 
-         reference text in case reference has no explicit content and
-         referenced section has no title. -->
-    <variable id="Untitled section">Untitled section.</variable>
+    <variable id="Content-Reference">Unresolved content reference to:</variable>
 
     <!-- Default title text for referenced list item. Used to generate
          reference text in case reference has no explicit content and 
@@ -268,66 +275,6 @@ See the accompanying license.txt file for applicable licenses.
     <!-- The title of the links to Related references -->
     <variable id="Related references">Related References</variable>
 
-    <!--
-       Strings used in the online-help publishing.
-    -->
-
-    <!-- The title of the "contents" button in online-help output -->
-    <variable id="Contents button title">Contents</variable>
-
-    <!-- The title of the "index" button in online-help output -->
-    <variable id="Index button title">Index</variable>
-
-    <!-- The separator of multiple index entries in online-help output -->
-    <variable id="Index multiple entries separator">, </variable>
-
-    <!-- The title of the "search" button in online-help output -->
-    <variable id="Search button title">Search</variable>
-
-    <!-- The title of the "back" button in online-help output -->
-    <variable id="Back button title">Back</variable>
-
-    <!-- The title of the "forward" button in online-help output -->
-    <variable id="Forward button title">Forward</variable>
-
-    <!-- The title of the "main page" button in online-help output -->
-    <variable id="Main page button title">Home</variable>
-
-    <!-- The title of the "previous page" button in online-help output -->
-    <variable id="Previous page button title">Previous Topic</variable>
-
-    <!-- The title of the "next page" button in online-help output -->
-    <variable id="Next page button title">Next Topic</variable>
-
-    <!-- The "online help" document title prefix in online-help output -->
-    <variable id="Online help prefix">Online Help</variable>
-
-    <!-- The search by index field title in online-help output -->
-    <variable id="Search index field title">Search for the keyword:</variable>
-
-    <!-- The search by index button title in online-help output -->
-    <variable id="Search index button title">View</variable>
-
-    <!-- The search by text field title in online-help output -->
-    <variable id="Search text field title">Search help for:</variable>
-
-    <!-- The search by text button title in online-help output -->
-    <variable id="Search text button title">Search</variable>
-
-  <variable id="Online Help Search Method Field">Search method</variable>
-  <variable id="Online Help Search Method Or">or</variable>
-  <variable id="Online Help Search Method And">and</variable>
-  <variable id="Search Highlight Switch">Highlight text in search results</variable>
-  <variable id="Search index next button title">Show Next</variable>
-  <variable id="Search Whole Words Switch">Find whole words only</variable>
-  <variable id="Search Case Sensitive Switch">Match case</variable>
-  <variable id="Search Stopped Message">The search was stopped after 50 hits.</variable>
-  <!--This one is a java script expression. So if the order of message should be another don't forget to add '+'
-  and quotes to the string expressions.-->
-  <variable id="Search Excluded Stop Words Message">"The following words were excluded from the search: "+<param ref-name="stop-words-list"/></variable>
-  <variable id="Search Search in Progress Message">Search in progress...</variable>
-  <variable id="Search Search Give No Results Message">No matches were found.</variable>
-
     <!--Label for a step with importance="optional"-->
     <variable id="Optional Step">Optional:</variable>
     <variable id="Required Step">Required:</variable>
@@ -340,6 +287,10 @@ See the accompanying license.txt file for applicable licenses.
     <variable id="Task Result"></variable>
     <variable id="Task Example"></variable>
     <variable id="Task Postreq"></variable>
+    <variable id="Step Number"><param ref-name="number"/>. </variable>
+    <variable id="Step Format">1</variable>
+    <variable id="Substep Number"><param ref-name="number"/>) </variable>
+    <variable id="Substep Format">a</variable>
     
     <!--Glossary Variables-->
     <!-- The footer that appears on the odd-numbered glossary pages. -->
@@ -363,7 +314,6 @@ See the accompanying license.txt file for applicable licenses.
      <!-- The heading string to put at the top of the List of Figures -->
      <variable id="List of Figures">List of Figures</variable>
 
-  <variable id="#menucascade-separator"> &gt; </variable>
-  <variable id="#quote-start">“</variable>
-  <variable id="#quote-end">”</variable>
+  <variable id="#quote-start"><variable id="OpenQuote"/></variable>
+  <variable id="#quote-end"><variable id="CloseQuote"/></variable>
 </vars>

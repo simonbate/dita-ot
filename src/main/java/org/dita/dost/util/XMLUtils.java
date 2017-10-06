@@ -1,6 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2011 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.util;
 
@@ -10,9 +13,10 @@ import static org.dita.dost.util.Constants.*;
 
 import java.io.*;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Stream;
 
+import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -21,7 +25,12 @@ import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
+import net.sf.saxon.event.Receiver;
+import net.sf.saxon.jaxp.TransformerImpl;
+import net.sf.saxon.serialize.MessageWarner;
 import org.dita.dost.exception.DITAOTException;
+import org.dita.dost.log.DITAOTLogger;
+import org.dita.dost.log.LoggingErrorListener;
 import org.w3c.dom.*;
 
 import org.xml.sax.*;
@@ -36,8 +45,41 @@ import org.xml.sax.helpers.XMLReaderFactory;
  */
 public final class XMLUtils {
 
-    /** Private constructor to make class uninstantiable. */
-    private XMLUtils() {}
+    private static final DocumentBuilderFactory factory;
+    static {
+        factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+    }
+    private DITAOTLogger logger;
+    private final TransformerFactory transformerFactory;
+
+    public static final Attributes EMPTY_ATTRIBUTES = new AttributesImpl();
+
+    public XMLUtils() {
+        transformerFactory = TransformerFactory.newInstance();
+    }
+
+    public void setLogger(final DITAOTLogger logger) {
+        this.logger = logger;
+    }
+
+    /** Convert DOM NodeList to List. */
+    public static <T> List<T> toList(final NodeList nodes) {
+        final List<T> res = new ArrayList<>(nodes.getLength());
+        for (int i = 0; i < nodes.getLength(); i++) {
+            res.add((T) nodes.item(i));
+        }
+        return res;
+    }
+
+    public static Transformer withLogger(final Transformer transformer, final DITAOTLogger logger) {
+        transformer.setErrorListener(new LoggingErrorListener(logger));
+        if (transformer instanceof TransformerImpl) {
+            final Receiver mw = new MessageWarner();
+            ((TransformerImpl) transformer).getUnderlyingController().setMessageEmitter(mw);
+        }
+        return transformer;
+    }
 
     /**
      * List descendant elements by DITA class.
@@ -45,7 +87,7 @@ public final class XMLUtils {
      * @param elem root element
      * @param cls DITA class to match elements
      * @param deep {@code true} to read descendants, {@code false} to read only direct children
-     * @raturn list of matching elements
+     * @return list of matching elements
      */
     public static List<Element> getChildElements(final Element elem, final DitaClass cls, final boolean deep) {
         final NodeList children = deep ? elem.getElementsByTagName("*") : elem.getChildNodes();
@@ -60,11 +102,30 @@ public final class XMLUtils {
     }
 
     /**
-     * List chilid elements by DITA class.
+     * Get first child element by DITA class.
+     *
+     * @param elem root element
+     * @param cls DITA class to match element
+     * @return matching element
+     */
+    public static Optional<Element> getChildElement(final Element elem, final DitaClass cls) {
+        final NodeList children = elem.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            final Node child = children.item(i);
+            if (cls.matches(child)) {
+                return Optional.of((Element) child);
+            }
+        }
+        return Optional.empty();
+    }
+
+
+    /**
+     * List child elements by DITA class.
      *
      * @param elem root element
      * @param cls DITA class to match elements
-     * @raturn list of matching elements
+     * @return list of matching elements
      */
     public static List<Element> getChildElements(final Element elem, final DitaClass cls) {
         return getChildElements(elem, cls, false);
@@ -74,7 +135,7 @@ public final class XMLUtils {
      * List child elements elements.
      *
      * @param elem root element
-     * @raturn list of matching elements
+     * @return list of matching elements
      */
     public static List<Element> getChildElements(final Element elem) {
         return getChildElements(elem, false);
@@ -85,7 +146,7 @@ public final class XMLUtils {
      *
      * @param elem root element
      * @param deep {@code true} to read descendants, {@code false} to read only direct children
-     * @raturn list of matching elements
+     * @return list of matching elements
      */
     public static List<Element> getChildElements(final Element elem, final boolean deep) {
         final NodeList children = deep ? elem.getElementsByTagName("*") : elem.getChildNodes();
@@ -97,6 +158,135 @@ public final class XMLUtils {
             }
         }
         return res;
+    }
+    
+    /**
+     * Checks if the closest DITA ancestor {@code <foreign>} or {@code <unknown>}
+     * 
+     * @param classes stack of class attributes for open elements
+     * @return true if closest DITA ancestor is {@code <foreign>} or {@code <unknown>}, otherwise false
+     */
+    public static boolean nonDitaContext(final Deque<DitaClass> classes) {
+        final Iterator<DitaClass> it = classes.iterator();
+        it.next(); // Skip first, because we're checking if current element is inside non-DITA context
+        while (it.hasNext()) {
+            final DitaClass cls = it.next();
+            if (cls != null && cls.isValid() &&
+                    (TOPIC_FOREIGN.matches(cls) || TOPIC_UNKNOWN.matches(cls))) {
+                return true;
+            } else if (cls != null && cls.isValid()) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get specific element node from child nodes.
+     *
+     * @param element    parent node
+     * @param classValue DITA class to search for
+     * @return element node, {@code null} if not found
+     */
+    public static Element getElementNode(final Element element, final DitaClass classValue) {
+        final NodeList list = element.getChildNodes();
+        for (int i = 0; i < list.getLength(); i++) {
+            final Node node = list.item(i);
+            if (node.getNodeType() == Node.ELEMENT_NODE) {
+                final Element child = (Element) node;
+                if (classValue.matches(child)) {
+                    return child;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static final List<String> excludeList;
+    static {
+        final List<String> el = new ArrayList<>();
+        el.add(TOPIC_INDEXTERM.toString());
+        el.add(TOPIC_DRAFT_COMMENT.toString());
+        el.add(TOPIC_REQUIRED_CLEANUP.toString());
+        el.add(TOPIC_DATA.toString());
+        el.add(TOPIC_DATA_ABOUT.toString());
+        el.add(TOPIC_UNKNOWN.toString());
+        el.add(TOPIC_FOREIGN.toString());
+        excludeList = Collections.unmodifiableList(el);
+    }
+
+    /**
+     * Get text value of a node.
+     *
+     * @param root root node
+     * @return text value
+     */
+    public static String getText(final Node root) {
+        if (root == null) {
+            return "";
+        } else {
+            final StringBuilder result = new StringBuilder(1024);
+            if (root.hasChildNodes()) {
+                final NodeList list = root.getChildNodes();
+                for (int i = 0; i < list.getLength(); i++) {
+                    final Node childNode = list.item(i);
+                    if (childNode.getNodeType() == Node.ELEMENT_NODE) {
+                        final Element e = (Element) childNode;
+                        final String value = e.getAttribute(ATTRIBUTE_NAME_CLASS);
+                        if (!excludeList.contains(value)) {
+                            final String s = getText(e);
+                            result.append(s);
+                        }
+                    } else if (childNode.getNodeType() == Node.TEXT_NODE) {
+                        result.append(childNode.getNodeValue());
+                    }
+                }
+            } else if (root.getNodeType() == Node.TEXT_NODE) {
+                result.append(root.getNodeValue());
+            }
+            return result.toString();
+        }
+    }
+
+    /**
+     * Search for the special kind of node by specialized value. Equivalent to XPath
+     *
+     * <pre>$root//*[contains(@class, $classValue)][@*[name() = $attrName and . = $searchKey]]</pre>
+     *
+     * @param root       place may have the node.
+     * @param searchKey  keyword for search.
+     * @param attrName   attribute name for search.
+     * @param classValue class value for search.
+     * @return matching element, {@code null} if not found
+     */
+    public static Element searchForNode(final Element root, final String searchKey, final String attrName,
+                                  final DitaClass classValue) {
+        if (root == null) {
+            return null;
+        }
+        final Queue<Element> queue = new LinkedList<>();
+        queue.offer(root);
+        while (!queue.isEmpty()) {
+            final Element pe = queue.poll();
+            final NodeList pchildrenList = pe.getChildNodes();
+            for (int i = 0; i < pchildrenList.getLength(); i++) {
+                final Node node = pchildrenList.item(i);
+                if (node.getNodeType() == Node.ELEMENT_NODE) {
+                    queue.offer((Element) node);
+                }
+            }
+            if (pe.getAttribute(ATTRIBUTE_NAME_CLASS) == null || !classValue.matches(pe)) {
+                continue;
+            }
+            final Attr value = pe.getAttributeNode(attrName);
+            if (value == null) {
+                continue;
+            }
+            if (searchKey.equals(value.getValue())) {
+                return pe;
+            }
+        }
+        return null;
     }
 
     /**
@@ -117,6 +307,17 @@ public final class XMLUtils {
         } else {
             atts.addAttribute(uri, localName, qName, type, value);
         }
+    }
+
+    /**
+     * Add or set attribute. Convenience method for {@link #addOrSetAttribute(AttributesImpl, String, String, String, String, String)}.
+     *
+     * @param atts attributes
+     * @param name name
+     * @param value attribute value
+     */
+    public static void addOrSetAttribute(final AttributesImpl atts, final QName name, final String value) {
+        addOrSetAttribute(atts, name.getNamespaceURI(), name.getLocalPart(), name.toString(), "CDATA", value);
     }
 
     /**
@@ -199,7 +400,7 @@ public final class XMLUtils {
      * @param input absolute URI to transform and replace
      * @param filters XML filters to transform file with, may be an empty list
      */
-    public static void transform(final URI input, final List<XMLFilter> filters) throws DITAOTException {
+    public void transform(final URI input, final List<XMLFilter> filters) throws DITAOTException {
         assert input.isAbsolute();
         if (!input.getScheme().equals("file")) {
             throw new IllegalArgumentException("Only file URI scheme supported: " + input);
@@ -214,9 +415,9 @@ public final class XMLUtils {
      * @param inputFile file to transform and replace
      * @param filters XML filters to transform file with, may be an empty list
      */
-    public static void transform(final File inputFile, final List<XMLFilter> filters) throws DITAOTException {
+    public void transform(final File inputFile, final List<XMLFilter> filters) throws DITAOTException {
         final File outputFile = new File(inputFile.getAbsolutePath() + FILE_EXTENSION_TEMP);
-        transform(inputFile, outputFile, filters);
+        transformFile(inputFile, outputFile, filters);
         try {
             deleteQuietly(inputFile);
             moveFile(outputFile, inputFile);
@@ -234,15 +435,25 @@ public final class XMLUtils {
      * @param outputFile output file
      * @param filters XML filters to transform file with, may be an empty list
      */
-    public static void transform(final File inputFile, final File outputFile, final List<XMLFilter> filters) throws DITAOTException {
+    public void transform(final File inputFile, final File outputFile, final List<XMLFilter> filters) throws DITAOTException {
+        if (inputFile.equals(outputFile)) {
+            transform(inputFile, filters);
+        } else {
+            transformFile(inputFile, outputFile, filters);
+        }
+    }
+
+    private void transformFile(final File inputFile, final File outputFile, final List<XMLFilter> filters) throws DITAOTException {
         if (!outputFile.getParentFile().exists() && !outputFile.getParentFile().mkdirs()) {
             throw new DITAOTException("Failed to create output directory " + outputFile.getParentFile().getAbsolutePath());
         }
-        
-        InputStream in = null;
-        OutputStream out = null;
-        try {
-            final Transformer transformer = TransformerFactory.newInstance().newTransformer();
+
+        try (final InputStream in = new BufferedInputStream(new FileInputStream(inputFile));
+             final OutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+            Transformer transformer = transformerFactory.newTransformer();
+            if (logger != null) {
+                transformer = withLogger(transformer, logger);
+            }
             XMLReader reader = getXMLReader();
             for (final XMLFilter filter : filters) {
                 // ContentHandler must be reset so e.g. Saxon 9.1 will reassign ContentHandler
@@ -251,8 +462,6 @@ public final class XMLUtils {
                 filter.setParent(reader);
                 reader = filter;
             }
-            in = new BufferedInputStream(new FileInputStream(inputFile));
-            out = new BufferedOutputStream(new FileOutputStream(outputFile));
             final Source source = new SAXSource(reader, new InputSource(in));
             source.setSystemId(inputFile.toURI().toString());
             final Result result = new StreamResult(out);
@@ -261,21 +470,6 @@ public final class XMLUtils {
             throw e;
         } catch (final Exception e) {
             throw new DITAOTException("Failed to transform " + inputFile + ": " + e.getMessage(), e);
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (final IOException e) {
-                    // ignore
-                }
-            }
-            if (out != null) {
-                try {
-                    out.close();
-                } catch (final IOException e) {
-                    // ignore
-                }
-            }
         }
     }
 
@@ -286,11 +480,27 @@ public final class XMLUtils {
      * @param output output file
      * @param filters XML filters to transform file with, may be an empty list
      */
-    public static void transform(final URI input, final URI output, final List<XMLFilter> filters) throws DITAOTException {
+    public void transform(final URI input, final URI output, final List<XMLFilter> filters) throws DITAOTException {
+        if (input.equals(output)) {
+            transform(input, filters);
+        } else {
+            transformURI(input, output, filters);
+        }
+    }
+
+    private void transformURI(final URI input, final URI output, final List<XMLFilter> filters) throws DITAOTException {
+        final File outputFile = new File(output);
+        if (!outputFile.getParentFile().exists() && !outputFile.getParentFile().mkdirs()) {
+            throw new DITAOTException("Failed to create output directory " + outputFile.getParentFile().getAbsolutePath());
+        }
+
         InputSource src = null;
         StreamResult result = null;
         try {
-            final Transformer transformer = TransformerFactory.newInstance().newTransformer();
+            Transformer transformer = transformerFactory.newTransformer();
+            if (logger != null) {
+                transformer = withLogger(transformer, logger);
+            }
             XMLReader reader = getXMLReader();
             for (final XMLFilter filter : filters) {
                 // ContentHandler must be reset so e.g. Saxon 9.1 will reassign ContentHandler
@@ -370,7 +580,7 @@ public final class XMLUtils {
 
     /**
      * Escape XML characters.
-     * Suggested by hussein_shafie
+     *
      * @param s value needed to be escaped
      * @return escaped value
      */
@@ -381,7 +591,7 @@ public final class XMLUtils {
 
     /**
      * Escape XML characters.
-     * Suggested by hussein_shafie
+     * 
      * @param chars char arrays
      * @param offset start position
      * @param length arrays lenth
@@ -466,7 +676,6 @@ public final class XMLUtils {
      * @throws RuntimeException if instantiating DocumentBuilder failed
      */
     public static DocumentBuilder getDocumentBuilder() {
-        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder;
         try {
             builder = factory.newDocumentBuilder();
@@ -483,25 +692,25 @@ public final class XMLUtils {
      * Convenience builder for {@link org.xml.sax.Attributes SAX Attributes}.
      */
     public static final class AttributesBuilder {
-    	
-    	final AttributesImpl atts;
-    	
-    	/**
-    	 * Construct empty attributes builder.
-    	 */
-    	public AttributesBuilder() {
-    		atts = new AttributesImpl();
-    	}
-    	
-    	/**
-    	 * Construct attributes builder with initial attribute set.
-    	 * 
-    	 * @param atts initial attributes
-    	 */
-    	public AttributesBuilder(final Attributes atts) {
-    		this.atts = new AttributesImpl(atts);
-    	}
-    	
+
+        final AttributesImpl atts;
+
+        /**
+         * Construct empty attributes builder.
+         */
+        public AttributesBuilder() {
+            atts = new AttributesImpl();
+        }
+
+        /**
+         * Construct attributes builder with initial attribute set.
+         *
+         * @param atts initial attributes
+         */
+        public AttributesBuilder(final Attributes atts) {
+            this.atts = new AttributesImpl(atts);
+        }
+
         /**
          * Add or set attribute.
          * 
@@ -533,7 +742,7 @@ public final class XMLUtils {
         public AttributesBuilder add(final String localName, final String value) {
             return add(NULL_NS_URI, localName, localName, "CDATA", value);
         }
-    	
+
         /**
          * Add or set attribute. Convenience method for {@link #add(String, String, String, String, String)}.
          * 
@@ -575,10 +784,10 @@ public final class XMLUtils {
          * Returns a newly-created Attributes based on the contents of the builder.
          * @return new attributes
          */
-    	public Attributes build() {
-    		return new AttributesImpl(atts);
-    	}
-    	
+        public Attributes build() {
+            return new AttributesImpl(atts);
+        }
+
     }
 
     /**
@@ -592,7 +801,7 @@ public final class XMLUtils {
 
         @Override
         public Source resolve(final String href, final String base) throws TransformerException {
-            Configuration.logger.info("XSLT parse: " + href);
+            System.out.println("XSLT parse: " + href);
             return r.resolve(href, base);
         }
     }
@@ -668,13 +877,13 @@ public final class XMLUtils {
 
         @Override
         public void parse(InputSource input) throws IOException, SAXException {
-            Configuration.logger.info("SAX parse: " + (input.getSystemId() != null ? input.getSystemId() : input.toString()));
+            System.out.println("SAX parse: " + (input.getSystemId() != null ? input.getSystemId() : input.toString()));
             r.parse(input);
         }
 
         @Override
         public void parse(String systemId) throws IOException, SAXException {
-            Configuration.logger.info("SAX parse: " + systemId);
+            System.out.println("SAX parse: " + systemId);
             r.parse(systemId);
         }
     }
@@ -690,7 +899,7 @@ public final class XMLUtils {
 
         @Override
         public Document parse(InputSource is) throws SAXException, IOException {
-            Configuration.logger.info("DOM parse: " + (is.getSystemId() != null ? is.getSystemId() : is.toString()));
+            System.out.println("DOM parse: " + (is.getSystemId() != null ? is.getSystemId() : is.toString()));
             return b.parse(is);
         }
 
@@ -723,5 +932,59 @@ public final class XMLUtils {
         public DOMImplementation getDOMImplementation() {
             return b.getDOMImplementation();
         }
+    }
+
+    /**
+     * Get attribute value.
+     *
+     * @param elem attribute parent element
+     * @param attrName attribute name
+     * @return attribute value, {@code null} if not set
+     */
+    public static String getValue(final Element elem, final String attrName) {
+        final Attr attr = elem.getAttributeNode(attrName);
+        if (attr != null && !attr.getValue().isEmpty()) {
+            return attr.getValue();
+        }
+        return null;
+    }
+
+    /**
+     * Get cascaded attribute value.
+     *
+     * @param elem attribute parent element
+     * @param attrName attribute name
+     * @return attribute value, {@code null} if not set
+     */
+    public static String getCascadeValue(final Element elem, final String attrName) {
+        Element current = elem;
+        while (current != null) {
+            final Attr attr = current.getAttributeNode(attrName);
+            if (attr != null) {
+                return attr.getValue();
+            }
+            final Node parent = current.getParentNode();
+            if (parent != null && parent.getNodeType() == Node.ELEMENT_NODE) {
+                current = (Element) parent;
+            } else {
+                break;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Stream of element ancestor elements.
+     * @param element start element
+     * @return stream of ancestor elements
+     */
+    public static Stream<Element> ancestors(final Element element) {
+        final Stream.Builder<Element> builder = Stream.builder();
+        for (Node current = element.getParentNode(); current != null; current = current.getParentNode()) {
+            if (current.getNodeType() == Node.ELEMENT_NODE) {
+                builder.accept((Element) current);
+            }
+        }
+        return builder.build();
     }
 }

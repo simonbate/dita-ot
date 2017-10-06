@@ -1,6 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2011 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.index;
 
@@ -8,7 +11,6 @@ import static org.junit.Assert.*;
 
 import org.dita.dost.TestUtils;
 import org.dita.dost.exception.DITAOTException;
-import org.dita.dost.writer.EclipseIndexWriter;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 
+import org.dita.dost.writer.HTMLIndexWriter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -29,29 +32,11 @@ public class IndexTermCollectionTest {
     @Before
     public void setUp() throws Exception {
         tempDir = TestUtils.createTempDir(getClass());
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
-        i.clear();
-    }
-
-    @Test
-    public void testGetInstantce() {
-        assertSame(IndexTermCollection.getInstantce(),
-                IndexTermCollection.getInstantce());
-    }
-
-    @Test
-    public void testClear() {
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
-        assertEquals(0, i.getTermList().size());
-        i.addTerm(new IndexTerm());
-        assertEquals(1, i.getTermList().size());
-        i.clear();
-        assertEquals(0, i.getTermList().size());
     }
 
     @Test
     public void testGetIndexType() {
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
+        final IndexTermCollection i = new IndexTermCollection();
         assertNull(i.getIndexType());
         i.setIndexType("");
         assertEquals("", i.getIndexType());
@@ -61,14 +46,14 @@ public class IndexTermCollectionTest {
 
     @Test
     public void testSetIndexType() {
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
+        final IndexTermCollection i = new IndexTermCollection();
         i.setIndexType(null);
         i.setIndexType("");
     }
 
     @Test
     public void testGetIndexClass() {
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
+        final IndexTermCollection i = new IndexTermCollection();
         i.setIndexClass(null);
         assertNull(i.getIndexClass());
         i.setIndexClass("");
@@ -79,14 +64,14 @@ public class IndexTermCollectionTest {
 
     @Test
     public void testSetIndexClass() {
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
+        final IndexTermCollection i = new IndexTermCollection();
         i.setIndexClass(null);
         i.setIndexClass("");
     }
 
     @Test
     public void testAddTerm() {
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
+        final IndexTermCollection i = new IndexTermCollection();
         assertEquals(0, i.getTermList().size());
         i.addTerm(new IndexTerm());
         i.addTerm(new IndexTerm());
@@ -100,8 +85,7 @@ public class IndexTermCollectionTest {
 
     @Test
     public void testGetTermList() {
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
-        i.clear();
+        final IndexTermCollection i = new IndexTermCollection();
         assertEquals(Collections.emptyList(), i.getTermList());
         final IndexTerm first = new IndexTerm();
         first.setTermName("first");
@@ -117,8 +101,7 @@ public class IndexTermCollectionTest {
 
     @Test
     public void testSort() {
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
-        i.clear();
+        final IndexTermCollection i = new IndexTermCollection();
         final IndexTerm first = new IndexTerm();
         first.setTermName("first");
         first.setTermKey("first");
@@ -134,9 +117,8 @@ public class IndexTermCollectionTest {
 
     @Test
     public void testOutputTerms() throws DITAOTException {
-        final IndexTermCollection i = IndexTermCollection.getInstantce();
-        i.clear();
-        i.setIndexClass(EclipseIndexWriter.class.getCanonicalName());
+        final IndexTermCollection i = new IndexTermCollection();
+        i.setIndexClass(HTMLIndexWriter.class.getCanonicalName());
         i.setOutputFileRoot(new File(tempDir, "foo").getAbsolutePath());
         final IndexTerm first = new IndexTerm();
         first.setTermName("first");

@@ -1,6 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2011 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.module;
 
@@ -32,8 +35,6 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
 import org.dita.dost.TestUtils;
 import org.dita.dost.exception.DITAOTException;
-import org.dita.dost.pipeline.AbstractFacade;
-import org.dita.dost.pipeline.PipelineFacade;
 import org.dita.dost.pipeline.PipelineHashIO;
 import org.dita.dost.util.CatalogUtils;
 import org.dita.dost.util.Constants;
@@ -69,7 +70,7 @@ public class DebugAndFilterModuleTest {
         job.setGeneratecopyouter(NOT_GENERATEOUTTER);
         job.setOutputDir(outDir);
         job.setProperty(INPUT_DIR, inputDir.getAbsolutePath());
-        job.setProperty(INPUT_DIR_URI, inputDir.getAbsoluteFile().toURI().toString());
+        job.setInputDir(inputDir.getAbsoluteFile().toURI());
         job.write();
 
         final PipelineHashIO pipelineInput = new PipelineHashIO();
@@ -92,10 +93,10 @@ public class DebugAndFilterModuleTest {
         pipelineInput.setAttribute(ANT_INVOKER_EXT_PARAM_TRANSTYPE, "xhtml");
         pipelineInput.setAttribute(ANT_INVOKER_EXT_PARAM_GENERATE_DEBUG_ATTR, Boolean.TRUE.toString());
 
-        final AbstractFacade facade = new PipelineFacade();
-        facade.setLogger(new TestUtils.TestLogger());
-        facade.setJob(job);
-        facade.execute("DebugAndFilter", pipelineInput);
+        final DebugAndFilterModule module = new DebugAndFilterModule();
+        module.setLogger(new TestUtils.TestLogger());
+        module.setJob(job);
+        module.execute(pipelineInput);
     }
 
     @Test
@@ -105,7 +106,8 @@ public class DebugAndFilterModuleTest {
                 new File("topics", "target-topic-a.xml"),
                 new File("topics", "target-topic-c.xml"),
                 new File("topics", "xreffin-topic-1.xml"),
-                new File("topics", "copy-to.xml"),
+                // TODO test me somewhere else
+//                new File("topics", "copy-to.xml"),
         };
         final Map<File, File> copyto = new HashMap<File, File>();
         copyto.put(new File("topics", "copy-to.xml"), new File("topics", "xreffin-topic-1.xml"));

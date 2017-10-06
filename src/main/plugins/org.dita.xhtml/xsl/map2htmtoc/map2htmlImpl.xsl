@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- This file is part of the DITA Open Toolkit project.
-     See the accompanying license.txt file for applicable licenses.-->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2012 Jarno Elovirta
+
+See the accompanying LICENSE file for applicable license.
+-->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:dita-ot="http://dita-ot.sourceforge.net/ns/201007/dita-ot"
                 xmlns:ditamsg="http://dita-ot.sourceforge.net/ns/200704/ditamsg" version="2.0"
                 exclude-result-prefixes="dita-ot ditamsg">
 
-  <xsl:import href="plugin:org.dita.base:xsl/common/output-message.xsl"/>
-  <xsl:import href="plugin:org.dita.base:xsl/common/dita-utilities.xsl"/>
-  <xsl:import href="plugin:org.dita.base:xsl/common/dita-textonly.xsl"/>
-
+  <!-- Deprecated since 2.3 -->
   <xsl:variable name="msgprefix">DOTX</xsl:variable>
 
   <xsl:param name="OUTEXT" select="'.html'"/>
@@ -155,8 +157,7 @@
 
   <xsl:template match="*" mode="ditamsg:missing-target-file-no-navtitle">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">008</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX008W'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
@@ -165,8 +166,7 @@
     <xsl:param name="target"/>
     <xsl:param name="fallback"/>
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">009</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX009W'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="$target"/>;%2=<xsl:value-of select="$fallback"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>

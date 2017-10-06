@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 This file is part of the DITA Open Toolkit project.
-See the accompanying license.txt file for applicable licenses.
+
+Copyright 2013 Eero Helenius
+
+See the accompanying LICENSE file for applicable license.
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:fo="http://www.w3.org/1999/XSL/Format"
     version="2.0">
 
     <xsl:template match="*[contains(@class,' ut-d/imagemap ')]">
-        <fo:inline>
-            <xsl:call-template name="commonattributes"/>
-        </fo:inline>
+        <xsl:variable name="attributes" as="attribute()*"><xsl:call-template name="commonattributes"/></xsl:variable>
+        <xsl:if test="exists($attributes)">
+            <fo:inline><xsl:sequence select="$attributes"/></fo:inline>
+        </xsl:if>
         <xsl:apply-templates select="*[contains(@class,' topic/image ')]"/>
         <fo:list-block xsl:use-attribute-sets="ol">
             <xsl:apply-templates select="*[contains(@class,' ut-d/area ')]"/>

@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2010 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2010 All Rights Reserved.
  */
 package org.dita.dost.reader;
 
@@ -51,34 +51,34 @@ public final class ConrefPushReader extends AbstractXMLReader {
     private final XMLReader reader;
 
     /**keep the file path of current file under parse
-	filePath is useful to get the absolute path of the target file.*/
+    filePath is useful to get the absolute path of the target file.*/
     private File fileDir = null;
 
     /**keep the file name of  current file under parse */
     private File parsefilename = null;
     /**pushcontent is used to store the content copied to target
-	 in pushcontent href will be resolved if it is relative path
-	 if @conref is in pushconref the target name should be recorded so that it
-	 could be added to conreflist for conref resolution.*/
+     in pushcontent href will be resolved if it is relative path
+     if @conref is in pushconref the target name should be recorded so that it
+     could be added to conreflist for conref resolution.*/
     private XMLStreamWriter pushcontentWriter;
     /** Common document for all push content document fragments. */
     private DocumentFragment pushcontentDocumentFragment;
 
     /**boolean start is used to control whether sax parser can start to
-	 record push content into String pushcontent.*/
+     record push content into String pushcontent.*/
     private boolean start = false;
     /**level is used to record the level number to the root element in pushcontent
-	 In endElement(...) we can turn start off to terminate adding content to pushcontent
-	 if level is zero. That means we reach the end tag of the starting element.*/
+     In endElement(...) we can turn start off to terminate adding content to pushcontent
+     if level is zero. That means we reach the end tag of the starting element.*/
     private int level = 0;
 
     /**target is used to record the target of the conref push
-	 if we reach pushafter action but there is no target recorded before, we need
-	 to report error.*/
+     if we reach pushafter action but there is no target recorded before, we need
+     to report error.*/
     private URI target = null;
 
     /**pushType is used to record the current type of push
-	 it is used in endElement(....) to tell whether it is pushafter or replace.*/
+     it is used in endElement(....) to tell whether it is pushafter or replace.*/
     private String pushType = null;
         
     /**
@@ -87,7 +87,7 @@ public final class ConrefPushReader extends AbstractXMLReader {
      * @return unmodifiable push table
      */
     public Map<File, Hashtable<MoveKey, DocumentFragment>> getPushMap() {
-    	return Collections.unmodifiableMap(pushtable);
+        return Collections.unmodifiableMap(pushtable);
     }
     
     @Override
@@ -102,7 +102,7 @@ public final class ConrefPushReader extends AbstractXMLReader {
             reader.parse(filename.toURI().toString());
         } catch (final RuntimeException e) {
             throw e;
-        }catch (final Exception e) {
+        } catch (final Exception e) {
             logger.error(e.getMessage(), e) ;
             e.printStackTrace();
         }
@@ -159,7 +159,7 @@ public final class ConrefPushReader extends AbstractXMLReader {
                         }
                     }
                     pushcontentWriter = getXMLStreamWriter();
-                    logger.warn(MessageUtils.getInstance().getMessage("DOTJ044W", atts.getValue(ATTRIBUTE_NAME_XTRF), atts.getValue(ATTRIBUTE_NAME_XTRC)).toString());
+                    logger.warn(MessageUtils.getMessage("DOTJ044W").setLocation(atts).toString());
                 }
                 start = true;
                 level = 1;
@@ -169,7 +169,7 @@ public final class ConrefPushReader extends AbstractXMLReader {
                 start = true;
                 level = 1;
                 if (target == null) {
-                    logger.error(MessageUtils.getInstance().getMessage("DOTJ039E", atts.getValue(ATTRIBUTE_NAME_XTRF), atts.getValue(ATTRIBUTE_NAME_XTRC)).toString());
+                    logger.error(MessageUtils.getMessage("DOTJ039E").setLocation(atts).toString());
                 } else {
                     putElement(name, atts, true);
                     pushType = ATTR_CONACTION_VALUE_PUSHAFTER;
@@ -179,7 +179,7 @@ public final class ConrefPushReader extends AbstractXMLReader {
                 level = 1;
                 target = toURI(atts.getValue(ATTRIBUTE_NAME_CONREF));
                 if (target == null) {
-                    logger.error(MessageUtils.getInstance().getMessage("DOTJ040E", atts.getValue(ATTRIBUTE_NAME_XTRF), atts.getValue(ATTRIBUTE_NAME_XTRC)).toString());
+                    logger.error(MessageUtils.getMessage("DOTJ040E").setLocation(atts).toString());
                 } else {
                     pushType = ATTR_CONACTION_VALUE_PUSHREPLACE;
                     putElement(name, atts, true);
@@ -187,6 +187,9 @@ public final class ConrefPushReader extends AbstractXMLReader {
 
             } else if (ATTR_CONACTION_VALUE_MARK.equals(conactValue)) {
                 target = toURI(atts.getValue(ATTRIBUTE_NAME_CONREF));
+                if (target == null) {
+                    logger.error(MessageUtils.getMessage("DOTJ068E").setLocation(atts).toString());
+                }
                 if (target != null &&
                         pushcontentDocumentFragment != null && pushcontentDocumentFragment.getChildNodes().getLength() > 0 &&
                         ATTR_CONACTION_VALUE_PUSHBEFORE.equals(pushType)) {
@@ -205,11 +208,7 @@ public final class ConrefPushReader extends AbstractXMLReader {
                     pushType = null;
                 }
             }
-        }//else if (pushcontent != null && pushcontent.length() > 0 && level == 0) {
-        //if there is no element with conaction="mark" after
-        //one with conaction="pushbefore", report syntax error
-
-        //}
+        }
     }
     
     /**
@@ -279,7 +278,7 @@ public final class ConrefPushReader extends AbstractXMLReader {
                 final String fragment = target.getFragment();
                 if (fragment == null) {
                     //if there is no '#' in target string, report error
-                    logger.error(MessageUtils.getInstance().getMessage("DOTJ041E", target.toString()).toString());
+                    logger.error(MessageUtils.getMessage("DOTJ041E", target.toString()).toString());
                 } else {
                     String id = "";
                     //has element id
@@ -324,7 +323,7 @@ public final class ConrefPushReader extends AbstractXMLReader {
     private void addtoPushTable(URI target, final DocumentFragment pushcontent, final String type) {
         if (target.getFragment() == null) {
             //if there is no '#' in target string, report error
-            logger.error(MessageUtils.getInstance().getMessage("DOTJ041E", target.toString()).toString());
+            logger.error(MessageUtils.getMessage("DOTJ041E", target.toString()).toString());
             return;
         }
 
@@ -350,7 +349,7 @@ public final class ConrefPushReader extends AbstractXMLReader {
             //append content if type is 'pushbefore' or 'pushafter'
             //report error if type is 'replace'
             if (ATTR_CONACTION_VALUE_PUSHREPLACE.equals(type)) {
-                logger.error(MessageUtils.getInstance().getMessage("DOTJ042E", target.toString()).toString());
+                logger.error(MessageUtils.getMessage("DOTJ042E", target.toString()).toString());
             } else {
                 table.put(moveKey, appendPushContent(pushcontent, table.get(moveKey)));
             }

@@ -45,7 +45,7 @@ licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
 This file is part of the DITA Open Toolkit project.
-See the accompanying license.txt file for applicable licenses.
+See the accompanying LICENSE file for applicable license.
  */
 public final class IndexPreprocessor {
     
@@ -88,13 +88,7 @@ public final class IndexPreprocessor {
      */
     public IndexPreprocessResult process(final Document theInput)
             throws ProcessException {
-        final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder documentBuilder = null;
-        try {
-            documentBuilder = documentBuilderFactory.newDocumentBuilder();
-        } catch (final ParserConfigurationException e) {
-            throw new RuntimeException("Unable to create a document builder: " + e.getMessage(), e);
-        }
+        final DocumentBuilder documentBuilder = XMLUtils.getDocumentBuilder();
         final Document doc = documentBuilder.newDocument();
 
         final Node rootElement = theInput.getDocumentElement();

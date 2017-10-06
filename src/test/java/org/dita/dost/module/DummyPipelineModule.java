@@ -1,6 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2011 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.module;
 
@@ -10,6 +13,9 @@ import org.dita.dost.module.AbstractPipelineModule;
 import org.dita.dost.pipeline.AbstractPipelineInput;
 import org.dita.dost.pipeline.AbstractPipelineOutput;
 import org.dita.dost.util.Job;
+import org.dita.dost.util.Job.FileInfo;
+
+import java.util.function.Predicate;
 
 /**
  * Dummy pipeline module for testing.
@@ -33,6 +39,11 @@ public class DummyPipelineModule implements AbstractPipelineModule {
 
     @Override
     public void setJob(final Job job) {
+        // Noop
+    }
+
+    @Override
+    public void setFileInfoFilter(Predicate<FileInfo> fileInfoFilter) {
         // Noop
     }
 

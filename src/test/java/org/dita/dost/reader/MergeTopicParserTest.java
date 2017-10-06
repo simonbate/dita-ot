@@ -1,12 +1,15 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2011 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.reader;
 
 import static javax.xml.transform.OutputKeys.OMIT_XML_DECLARATION;
+import static org.dita.dost.TestUtils.assertXMLEqual;
 import static org.junit.Assert.*;
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,15 +17,18 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URI;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
 import javax.xml.transform.stream.StreamResult;
 
 import org.junit.BeforeClass;
+import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 import org.xml.sax.helpers.DefaultHandler;
-import org.custommonkey.xmlunit.XMLUnit;
 import org.dita.dost.TestUtils;
 import org.dita.dost.util.MergeUtils;
 import org.junit.Test;
@@ -42,31 +48,39 @@ public class MergeTopicParserTest {
             throw new RuntimeException("SAX transformation factory not supported");
         }
         stf = (SAXTransformerFactory) tf;
-        
-        TestUtils.resetXMLUnit();
-        XMLUnit.setIgnoreWhitespace(true);
-        XMLUnit.setIgnoreComments(true);
     }
 
     @Test
     public void testParse() throws Exception {
         final MergeTopicParser parser = new MergeTopicParser(new MergeUtils());
-        final ByteArrayOutputStream output = new ByteArrayOutputStream();
-        final TransformerHandler s = stf.newTransformerHandler();
-        s.getTransformer().setOutputProperty(OMIT_XML_DECLARATION , "yes");
-        s.setResult(new StreamResult(output));
-        parser.setContentHandler(s);
-        parser.setLogger(new TestUtils.TestLogger());
-        parser.setOutput(new File(srcDir, "test.xml"));
-        s.startDocument();
-        parser.parse("test.xml", srcDir.getAbsoluteFile());
-        s.endDocument();
-        assertXMLEqual(new InputSource(new File(expDir, "test.xml").toURI().toString()),
-                new InputSource(new ByteArrayInputStream(output.toByteArray())));
+        parse(parser, "test.xml");
 
         final Method method = MergeTopicParser.class.getDeclaredMethod("handleLocalHref", URI.class);
         method.setAccessible(true);
         assertEquals(new URI("images/test.jpg"), method.invoke(parser, new URI("images/test.jpg")));
+    }
+
+    @Test
+    public void testParseSubdir() throws Exception {
+        parse(new MergeTopicParser(new MergeUtils()), "subdir/test3.xml");
+    }
+
+    public void parse(MergeTopicParser parser, String file) throws Exception {
+        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        factory.setIgnoringComments(true);
+        final DocumentBuilder builder = factory.newDocumentBuilder();
+        final Document output = builder.newDocument();
+        final TransformerHandler s = stf.newTransformerHandler();
+        s.getTransformer().setOutputProperty(OMIT_XML_DECLARATION , "yes");
+        s.setResult(new DOMResult(output));
+        parser.setContentHandler(s);
+        parser.setLogger(new TestUtils.TestLogger());
+        parser.setOutput(new File(srcDir, file));
+        s.startDocument();
+        parser.parse(file, srcDir.getAbsoluteFile());
+        s.endDocument();
+        assertXMLEqual(builder.parse(new File(expDir, file)), output);
     }
 
     @Test

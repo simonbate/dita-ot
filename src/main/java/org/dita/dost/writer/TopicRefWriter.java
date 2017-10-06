@@ -1,25 +1,26 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2007 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2007 All Rights Reserved.
  */
 package org.dita.dost.writer;
-
-import static org.dita.dost.util.Constants.*;
-import static org.dita.dost.util.FileUtils.*;
-import static org.dita.dost.util.URLUtils.toFile;
-import static org.dita.dost.util.XMLUtils.*;
-
-import java.io.File;
-import java.util.Map;
 
 import org.dita.dost.exception.DITAOTException;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.AttributesImpl;
+
+import java.io.File;
+import java.net.URI;
+import java.util.Map;
+
+import static org.dita.dost.util.Constants.*;
+import static org.dita.dost.util.URLUtils.*;
+import static org.dita.dost.util.FileUtils.*;
+import static org.dita.dost.util.XMLUtils.addOrSetAttribute;
 
 /**
  * TopicRefWriter which updates the linking elements' value according to the
@@ -27,8 +28,8 @@ import org.xml.sax.helpers.AttributesImpl;
  */
 public final class TopicRefWriter extends AbstractXMLFilter {
 
-    private Map<String, String> changeTable = null;
-    private Map<String, String> conflictTable = null;
+    private Map<URI, URI> changeTable = null;
+    private Map<URI, URI> conflictTable = null;
     private File currentFileDir = null;
     /** Using for rectify relative path of xml */
     private String fixpath = null;
@@ -45,24 +46,25 @@ public final class TopicRefWriter extends AbstractXMLFilter {
      * 
      * @param conflictTable conflictTable
      */
-    public void setup(final Map<String, String> conflictTable) {
-        for (final Map.Entry<String, String> e: changeTable.entrySet()) {
-            assert new File(e.getKey()).isAbsolute();
-            assert new File(e.getValue()).isAbsolute();
+    public void setup(final Map<URI, URI> conflictTable) {
+        for (final Map.Entry<URI, URI> e: changeTable.entrySet()) {
+            assert e.getKey().isAbsolute();
+            assert e.getValue().isAbsolute();
         }
         this.conflictTable = conflictTable;
     }
 
-    public void setChangeTable(final Map<String, String> changeTable) {
-        for (final Map.Entry<String, String> e: changeTable.entrySet()) {
-            assert new File(e.getKey()).isAbsolute();
-            assert new File(e.getValue()).isAbsolute();
+    public void setChangeTable(final Map<URI, URI> changeTable) {
+        assert changeTable != null && !changeTable.isEmpty();
+        for (final Map.Entry<URI, URI> e: changeTable.entrySet()) {
+            assert e.getKey().isAbsolute();
+            assert e.getValue().isAbsolute();
         }
         this.changeTable = changeTable;
     }
 
     public void setFixpath(final String fixpath) {
-        assert fixpath != null ? new File(fixpath).isAbsolute() : true;
+        assert fixpath == null || !(toFile(fixpath).isAbsolute());
         this.fixpath = fixpath;
     }
 
@@ -141,6 +143,7 @@ public final class TopicRefWriter extends AbstractXMLFilter {
     }
 
     private String updateHref(final Attributes atts) {
+        // FIXME should be URI
         String hrefValue = atts.getValue(ATTRIBUTE_NAME_HREF);
         if (hrefValue == null) {
             return null;
@@ -155,14 +158,14 @@ public final class TopicRefWriter extends AbstractXMLFilter {
 
         if (isLocalDita(atts)) {
             // replace the href value if it's referenced topic is extracted.
-            final File rootPathName = toFile(currentFile);
-            String changeTargetkey = resolve(currentFileDir, hrefValue).getPath();
-            String changeTarget = changeTable.get(changeTargetkey);
+            final URI rootPathName = currentFile;
+            URI changeTargetkey = stripFragment(currentFileDir.toURI().resolve(hrefValue));
+            URI changeTarget = changeTable.get(changeTargetkey);
 
-            final String topicID = getTopicID(hrefValue);
+            final String topicID = getTopicID(toURI(hrefValue));
             if (topicID != null) {
                 changeTargetkey = setFragment(changeTargetkey, topicID);
-                final String changeTarget_with_elemt = changeTable.get(changeTargetkey);
+                final URI changeTarget_with_elemt = changeTable.get(changeTargetkey);
                 if (changeTarget_with_elemt != null) {
                     changeTarget = changeTarget_with_elemt;
                 }
@@ -171,8 +174,8 @@ public final class TopicRefWriter extends AbstractXMLFilter {
             final String elementID = getElementID(hrefValue);
             final String pathtoElem = getFragment(hrefValue, "");
 
-            if (changeTarget == null || changeTarget.isEmpty()) {
-                String absolutePath = resolveTopic(currentFileDir, hrefValue);
+            if (changeTarget == null || changeTarget.toString().isEmpty()) {
+                URI absolutePath = toURI(resolveTopic(currentFileDir, hrefValue));
                 absolutePath = setElementID(absolutePath, null);
                 changeTarget = changeTable.get(absolutePath);
             }
@@ -180,36 +183,37 @@ public final class TopicRefWriter extends AbstractXMLFilter {
             if (changeTarget == null) {
                 return hrefValue;// no change
             } else {
-                final String conTarget = conflictTable.get(stripFragment(changeTarget));
-                if (conTarget != null && !conTarget.isEmpty()) {
-                    final String p = getRelativeUnixPath(rootPathName, conTarget);
+                final URI conTarget = conflictTable.get(stripFragment(changeTarget));
+                logger.debug("Update " + changeTarget + " to " + conTarget);
+                if (conTarget != null && !conTarget.toString().isEmpty()) {
+                    final URI p = getRelativePath(rootPathName, conTarget);
                     if (elementID == null) {
-                        return setFragment(p, getElementID(changeTarget));
+                        return setFragment(p, getElementID(changeTarget.toString())).toString();
                     } else {
-                        if (getFragment(conTarget) != null) {
+                        if (conTarget.getFragment() != null) {
                             if (!pathtoElem.contains(SLASH)) {
-                                return p;
+                                return p.toString();
                             } else {
-                                return setElementID(p, elementID);
+                                return setElementID(p, elementID).toString();
                             }
 
                         } else {
-                            return setFragment(p, pathtoElem);
+                            return setFragment(p, pathtoElem).toString();
                         }
                     }
                 } else {
-                    final String p = getRelativeUnixPath(rootPathName, changeTarget);
+                    final URI p = getRelativePath(rootPathName, changeTarget);
                     if (elementID == null) {
-                        return p;
+                        return p.toString();
                     } else {
-                        if (getFragment(changeTarget) != null) {
+                        if (changeTarget.getFragment() != null) {
                             if (!pathtoElem.contains(SLASH)) {
-                                return p;
+                                return p.toString();
                             } else {
-                                return setElementID(p, elementID);
+                                return setElementID(p, elementID).toString();
                             }
                         } else {
-                            return setFragment(p, pathtoElem);
+                            return setFragment(p, pathtoElem).toString();
                         }
                     }
                 }
@@ -220,23 +224,17 @@ public final class TopicRefWriter extends AbstractXMLFilter {
 
     /**
      * Retrieve the element ID from the path. If there is no element ID, return topic ID.
-     *
-     * @param relativePath
-     * @return String
      */
     private String getElementID(final String relativePath) {
-        String elementID = null;
-        String topicWithelement = null;
         final String fragment = getFragment(relativePath);
         if (fragment != null) {
-            topicWithelement = getFragment(relativePath);
-            if (topicWithelement.lastIndexOf(SLASH) != -1) {
-                elementID = topicWithelement.substring(topicWithelement.lastIndexOf(SLASH) + 1);
+            if (fragment.lastIndexOf(SLASH) != -1) {
+                return fragment.substring(fragment.lastIndexOf(SLASH) + 1);
             } else {
-                elementID = topicWithelement;
+                return fragment;
             }
         }
-        return elementID;
+        return null;
     }
 
 }

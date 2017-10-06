@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- This file is part of the DITA Open Toolkit project hosted on 
-     Sourceforge.net. See the accompanying license.txt file for 
-     applicable licenses.-->
-<!-- (c) Copyright IBM Corp. 2004, 2005 All Rights Reserved. -->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2004, 2005 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                               xmlns:svg="http://www.w3.org/2000/svg">
@@ -18,15 +21,15 @@
 
 <xsl:template match="*[contains(@class,' pr-d/syntaxdiagram ')]" priority="500">
       <svg width="200" height="100">
-	<xsl:apply-templates/>
+  <xsl:apply-templates/>
       </svg>
 </xsl:template>
 
 <xsl:template match="*[contains(@class,' pr-d/fragment ')]" priority="2">
-	<div>
-	<a><xsl:attribute name="name"><xsl:value-of select="title"/></xsl:attribute> </a>
-	<xsl:apply-templates/>
-	</div>
+  <div>
+  <a><xsl:attribute name="name"><xsl:value-of select="title"/></xsl:attribute> </a>
+  <xsl:apply-templates/>
+  </div>
 </xsl:template>
 
 <xsl:template match="*[contains(@class,' pr-d/synblk ')]" priority="2">
@@ -40,15 +43,15 @@
 <!-- titles for logical containers -->
 
 <xsl:template match="*[contains(@class,' pr-d/syntaxdiagram ')]/*[contains(@class,' topic/title ')]">
-	<text style="font-size: 16; font-family: Arial; font-weight: bold; stroke:none; fill:blue;">
-	<xsl:value-of select="."/>
-	</text>
+  <text style="font-size: 16; font-family: Arial; font-weight: bold; stroke:none; fill:blue;">
+  <xsl:value-of select="."/>
+  </text>
 </xsl:template>
 
 <xsl:template match="*[contains(@class,' pr-d/fragment ')]/*[contains(@class,' topic/title ')]" priority="2">
-	<text style="font-size: 12; font-family: Arial; font-weight: bold; stroke:none; fill:blue;">
-	<xsl:value-of select="."/>
-	</text>
+  <text style="font-size: 12; font-family: Arial; font-weight: bold; stroke:none; fill:blue;">
+  <xsl:value-of select="."/>
+  </text>
 </xsl:template>
 
 

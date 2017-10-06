@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?><!-- This file is part of the DITA Open Toolkit project hosted on 
-     Sourceforge.net. See the accompanying license.txt file for 
-     applicable licenses.--><!-- (c) Copyright IBM Corp. 2005, 2006 All Rights Reserved. --><messages>
+     Sourceforge.net. See the accompanying LICENSE file for
+     applicable licenses.--><!-- Copyright 2005, 2006 IBM Corporation --><messages>
   <!-- Start of Ant Messages -->
   <message id="DOTA001F" type="FATAL">
     <reason>&quot;%1&quot; is not a recognized transformation type.</reason>
@@ -59,6 +59,10 @@
   <message id="DOTA012W" type="WARN">
     <reason>Argument &quot;%1&quot; is deprecated.</reason>
     <response>Please use the argument &quot;%2&quot; instead.</response>
+  </message>
+  <message id="DOTA013F" type="FATAL">
+    <reason>Cannot find the specified DITAVAL '%1'.</reason>
+    <response/>
   </message>
 
   <!-- Start of Java Messages -->
@@ -403,10 +407,35 @@
     <reason>Chunk attribute uses both "to-content" and "by-topic" that conflict with each other.</reason>
     <response>Ignoring "by-topic" token.</response>
   </message>
-  
-  <message id="DOTJ065E" type="ERROR">
+
+  <message id="DOTJ065I" type="INFO">
     <reason>Branch filter generated topic %1 used more than once.</reason>
     <response>Renaming %1 to %2.</response>
+  </message>
+
+  <message id="DOTJ066E" type="ERROR">
+    <reason>No id attribute on topic type element %1.</reason>
+    <response>Using generated id %2.</response>
+  </message>
+
+  <message id="DOTJ067E" type="ERROR">
+    <reason>No id attribute on topic type element %1.</reason>
+    <response></response>
+  </message>
+
+  <message id="DOTJ069E" type="ERROR">
+    <reason>Circular key definition %1.</reason>
+    <response></response>
+  </message>
+
+  <message id="DOTJ070I" type="INFO">
+    <reason>Invalid 'class' attribute '%1' for was found for element '&lt;%2&gt;'.</reason>
+    <response>The element will be processed as an unknown or non-DITA element.</response>
+  </message>
+
+  <message id="DOTJ071E" type="ERROR">
+    <reason>Cannot find the specified DITAVAL '%1'.</reason>
+    <response></response>
   </message>
 
   <!-- End of Java Messages -->
@@ -799,7 +828,7 @@
     
   <!-- Add any messages defined by plugins. -->
   <!-- This file is part of the DITA Open Toolkit project hosted on 
-  Sourceforge.net. See the accompanying license.txt file for 
+  Sourceforge.net. See the accompanying LICENSE file for
   applicable licenses.-->
   <!-- Java -->
   

@@ -47,7 +47,7 @@ licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
 This file is part of the DITA Open Toolkit project.
-See the accompanying license.txt file for applicable licenses.
+See the accompanying LICENSE file for applicable license.
  */
 public final class IndexDitaProcessor {
     
@@ -152,13 +152,13 @@ public final class IndexDitaProcessor {
 
         if (!childEntrys.isEmpty() && !seeEntry.isEmpty()) {
             for (final IndexEntry e: seeEntry) {
-                logger.warn(MessageUtils.getInstance().getMessage("DOTA067W", e.getFormattedString(), textValue).toString());
+                logger.warn(MessageUtils.getMessage("DOTA067W", e.getFormattedString(), textValue).toString());
             }
             seeEntry.clear();
         }
         if (!childEntrys.isEmpty() && !seeAlsoEntry.isEmpty()) {
             for (final IndexEntry e: seeAlsoEntry) {
-                logger.warn(MessageUtils.getInstance().getMessage("DOTA068W", e.getFormattedString(), textValue).toString());
+                logger.warn(MessageUtils.getMessage("DOTA068W", e.getFormattedString(), textValue).toString());
             }
             seeAlsoEntry.clear();
         }

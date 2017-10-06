@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  This file is part of the DITA Open Toolkit project.
-  See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2011 Jarno Elovirta
+
+See the accompanying LICENSE file for applicable license.
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:fo="http://www.w3.org/1999/XSL/Format"
@@ -23,6 +26,10 @@
   </xsl:function>
 
   <xsl:key name="refid-by-value" use="@value" match="opentopic-index:refID"/>
+
+  <xsl:key name="refid-by-end-range-value"
+    use="ancestor-or-self::opentopic-index:index.entry[@end-range]/@value"
+    match="opentopic-index:refID[empty(ancestor::opentopic-index:index.groups)]"/>
 
   <xsl:template match="opentopic-index:index.entry[opentopic-index:refID/@value]">
     <!--Insert simple index entry marker-->
@@ -59,7 +66,8 @@
               select="key('refid-by-value', @value)
                       [empty(ancestor-or-self::opentopic-index:index.entry[@end-range])]
                       [empty(ancestor::opentopic-index:index.groups)]
-                      [empty(ancestor::*[@no-page eq 'true'])]"/>
+                      [empty(ancestor::*[@no-page eq 'true'])]
+                      [ancestor::*[contains(@class,' topic/topic ')]]"/>
           </xsl:for-each>
         </xsl:variable>
 
@@ -85,25 +93,14 @@
     <xsl:variable name="value" as="xs:string"
       select="opentopic-func:get-unique-refid-value(.)"/>
 
-    <xsl:variable name="start-range"
-      select="ancestor-or-self::opentopic-index:index.entry[@start-range][@value]"/>
-
     <fo:basic-link internal-destination="{$value}" xsl:use-attribute-sets="common.link">
       <fo:page-number-citation ref-id="{$value}"/>
 
-      <xsl:if test="$start-range">
-        <!--This is a start range. We also need a citation to the end range.-->
-        <!--Look for the end range.-->
-        <xsl:variable name="currentStartRangeValueAttr" select="$start-range[@value]"/>
-        <!--
-        Change the context to the corresponding refID in the end range, we need
-        to generate an unique ID for it.
-        -->
-        <xsl:apply-templates mode="make-page-number-citation"
-          select="key('refid-by-value', $currentStartRangeValueAttr)
-                  [empty(ancestor::opentopic-index:index.groups)]
-                  [ancestor-or-self::opentopic-index:index.entry[@end-range]]"/>
-      </xsl:if>
+      <xsl:variable name="start-range-value" as="attribute(value)?"
+        select="ancestor-or-self::opentopic-index:index.entry[@start-range]/@value"/>
+
+      <xsl:apply-templates mode="make-page-number-citation"
+        select="key('refid-by-end-range-value', $start-range-value)"/>
     </fo:basic-link>
   </xsl:template>
 

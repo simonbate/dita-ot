@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- This file is part of the DITA Open Toolkit project hosted on 
-     Sourceforge.net. See the accompanying license.txt file for 
-     applicable licenses.-->
-<!-- (c) Copyright IBM Corp. 2004, 2005 All Rights Reserved. -->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2004, 2005 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 
 <xsl:stylesheet version="2.0"
                 xmlns:dita-ot="http://dita-ot.sourceforge.net/ns/201007/dita-ot"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                exclude-result-prefixes="dita-ot">
+                xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                exclude-result-prefixes="dita-ot xs">
 
 <xsl:import href="plugin:org.dita.base:xsl/common/output-message.xsl"/>
 <xsl:import href="plugin:org.dita.base:xsl/common/dita-utilities.xsl"/>
@@ -17,6 +21,7 @@
 <xsl:output indent="yes"/>
 
 <!-- Define the error message prefix identifier -->
+<!-- Deprecated since 2.3 -->
 <xsl:variable name="msgprefix">DOTX</xsl:variable>
 
 <xsl:param name="WORKDIR" select="''"/>
@@ -59,8 +64,7 @@
       </xsl:when>
       <xsl:otherwise>
         <xsl:call-template name="output-message">
-          <xsl:with-param name="msgnum">002</xsl:with-param>
-          <xsl:with-param name="msgsev">W</xsl:with-param>
+          <xsl:with-param name="id" select="'DOTX002W'"/>
         </xsl:call-template>
       </xsl:otherwise>
     </xsl:choose>
@@ -78,15 +82,15 @@
 <!-- anchorref must use forward slash, not back slash. Allow
      anchorref to a non-ditamap, but warn if the format is still dita. -->
 <xsl:template match="@anchorref">
-  <xsl:variable name="fix-anchorref">
-    <xsl:value-of select="translate(.,
+  <xsl:variable name="fix-anchorref"
+    select="translate(.,
                            '\/=+|?[]{}()!#$%^&amp;*__~`;:.,-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                           '//=+|?[]{}()!#$%^&amp;*__~`;:.,-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
-  </xsl:variable>
+                           '//=+|?[]{}()!#$%^&amp;*__~`;:.,-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')"
+    as="xs:string"/>
   <xsl:attribute name="link_to">
     <xsl:choose>
       <xsl:when test="contains($fix-anchorref,'.ditamap')">
-	      <!-- xsl:value-of select="$work.dir"/><xsl:text>/</xsl:text><xsl:value-of select="substring-before($fix-anchorref,'.ditamap')"/>.xml<xsl:value-of select="substring-after($fix-anchorref,'.ditamap')"/ -->
+        <!-- xsl:value-of select="$work.dir"/><xsl:text>/</xsl:text><xsl:value-of select="substring-before($fix-anchorref,'.ditamap')"/>.xml<xsl:value-of select="substring-after($fix-anchorref,'.ditamap')"/ -->
               <xsl:value-of select="$work.dir"/><xsl:value-of select="substring-before($fix-anchorref,'.ditamap')"/>.xml<xsl:value-of select="substring-after($fix-anchorref,'.ditamap')"/>
       </xsl:when>
       <xsl:when test="contains($fix-anchorref,'.xml')"><xsl:value-of select="$work.dir"/><xsl:value-of select="$fix-anchorref"/></xsl:when>
@@ -94,8 +98,7 @@
         <!-- use the for-each so that the message scope is the map element, not the attribute -->
         <xsl:for-each select="parent::*">
           <xsl:call-template name="output-message">             
-            <xsl:with-param name="msgnum">003</xsl:with-param>
-            <xsl:with-param name="msgsev">I</xsl:with-param>
+            <xsl:with-param name="id" select="'DOTX003I'"/>
             <xsl:with-param name="msgparams">%1=<xsl:value-of select="@anchorref"/></xsl:with-param>
           </xsl:call-template>
         </xsl:for-each>
@@ -133,11 +136,11 @@
 
 <!-- Make the same changes for navref/@mapref that were made for @anchorref. -->
 <xsl:template match="*[contains(@class, ' map/navref ')]/@mapref">
-  <xsl:variable name="fix-mapref">
-    <xsl:value-of select="translate(.,
+  <xsl:variable name="fix-mapref"
+    select="translate(.,
                            '\/=+|?[]{}()!#$%^&amp;*__~`;:.,-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
-                           '//=+|?[]{}()!#$%^&amp;*__~`;:.,-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
-  </xsl:variable>
+                           '//=+|?[]{}()!#$%^&amp;*__~`;:.,-abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')"
+    as="xs:string"/>
   <xsl:attribute name="toc">
     <xsl:choose>
       <xsl:when test="contains($fix-mapref,'.ditamap')"><xsl:value-of select="$work.dir"/><xsl:value-of select="substring-before($fix-mapref,'.ditamap')"/>.xml</xsl:when>
@@ -145,8 +148,7 @@
       <xsl:otherwise>
         <xsl:for-each select="parent::*">
           <xsl:call-template name="output-message">
-            <xsl:with-param name="msgnum">003</xsl:with-param>
-            <xsl:with-param name="msgsev">I</xsl:with-param>
+            <xsl:with-param name="id" select="'DOTX003I'"/>
             <xsl:with-param name="msgparams">%1=<xsl:value-of select="@mapref"/></xsl:with-param>
           </xsl:call-template>
         </xsl:for-each>
@@ -163,15 +165,14 @@
     </xsl:when>
     <xsl:otherwise>
       <xsl:call-template name="output-message">
-        <xsl:with-param name="msgnum">004</xsl:with-param>
-        <xsl:with-param name="msgsev">I</xsl:with-param>
+        <xsl:with-param name="id" select="'DOTX004I'"/>
       </xsl:call-template>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
 
 <xsl:template match="*[contains(@class, ' map/anchor ')]">
-	<anchor id="{@id}"/>
+  <anchor id="{@id}"/>
 </xsl:template>
 
 <!-- If the topicref is a "topicgroup", or some other topicref that does not point
@@ -186,7 +187,7 @@
       <xsl:apply-templates/>
     </xsl:when>
     <xsl:otherwise>
-	  <topic>
+    <topic>
         <xsl:attribute name="label">
           <xsl:choose>
             <xsl:when test="*[contains(@class,'- map/topicmeta ')]/*[contains(@class, '- topic/navtitle ')]">
@@ -194,7 +195,7 @@
             </xsl:when>
             <xsl:when test="not(*[contains(@class,'- map/topicmeta ')]/*[contains(@class, '- topic/navtitle ')]) and @navtitle">
               <xsl:value-of select="@navtitle"/>
-            </xsl:when>			  
+            </xsl:when>
             <xsl:when test="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' map/linktext ')]">
               <xsl:apply-templates select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' map/linktext ')]" mode="dita-ot:text-only"/>
             </xsl:when>
@@ -219,9 +220,8 @@
                 <xsl:otherwise>
                   <xsl:value-of select="@href"/>
                   <xsl:call-template name="output-message">
-                       <xsl:with-param name="msgnum">005</xsl:with-param>
-                       <xsl:with-param name="msgsev">E</xsl:with-param>
-                		   <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
+                       <xsl:with-param name="id" select="'DOTX005E'"/>
+                       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
                   </xsl:call-template>
                 </xsl:otherwise>
               </xsl:choose>
@@ -251,23 +251,22 @@
                       <xsl:otherwise>
                         <xsl:value-of select="$work.dir"/><xsl:value-of select="@href"/>
                         <xsl:call-template name="output-message">
-                          <xsl:with-param name="msgnum">006</xsl:with-param>
-                          <xsl:with-param name="msgsev">E</xsl:with-param>
+                          <xsl:with-param name="id" select="'DOTX006E'"/>
                           <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
                         </xsl:call-template>
                        </xsl:otherwise>
                      </xsl:choose>
                   </xsl:attribute>
-		</xsl:if>
-		<xsl:apply-templates/>
-	</topic>
+    </xsl:if>
+    <xsl:apply-templates/>
+  </topic>
     </xsl:otherwise>
   </xsl:choose>
 </xsl:template>
 
 <!--makes sure that any literal text in topicmeta does not get output as literal text in the output TOC file, which should only have text in attributes, as pulled in by the topicref template-->
 <!--xsl:template match="text()">
-	<xsl:apply-templates/>
+  <xsl:apply-templates/>
 </xsl:template-->
   
 <xsl:template match="text()"/>

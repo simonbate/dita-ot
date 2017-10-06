@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2008 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2008 All Rights Reserved.
  */
 package org.dita.dost.platform;
 
@@ -23,8 +23,6 @@ final class ImportAntLibAction extends ImportAction {
 
     /**
      * get result.
-     * @return result
-     * @throws SAXException 
      */
     @Override
     public void getResult(final ContentHandler retBuf) throws SAXException {

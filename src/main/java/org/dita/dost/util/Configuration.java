@@ -1,9 +1,13 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2011 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.util;
 
+import static org.dita.dost.platform.Integrator.CONF_PARSER_FORMAT;
 import static org.dita.dost.util.Constants.*;
 
 import java.io.BufferedInputStream;
@@ -13,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-import org.dita.dost.log.DITAOTJavaLogger;
 import org.dita.dost.platform.Integrator;
 
 
@@ -25,7 +28,6 @@ import org.dita.dost.platform.Integrator;
  */
 public final class Configuration {
 
-    public static final DITAOTJavaLogger logger = new DITAOTJavaLogger();
     /** Debug mode to aid in development, not intended for end users. */
     public static final boolean DEBUG = false;
 
@@ -39,6 +41,18 @@ public final class Configuration {
     static {
         final Map<String, String> c = new HashMap<>();
         
+        final Properties applicationProperties = new Properties();
+        try (InputStream applicationInputStream = Configuration.class.getClassLoader().getResourceAsStream(APP_CONF_PROPERTIES)) {
+            if (applicationInputStream != null) {
+                applicationProperties.load(applicationInputStream);
+                for (final Map.Entry<Object, Object> e: applicationProperties.entrySet()) {
+                    c.put(e.getKey().toString(), e.getValue().toString());
+                }
+            }
+        } catch (final IOException e) {
+            System.err.println(e.getMessage());
+        }
+
         final Properties pluginProperties = new Properties();
         InputStream plugingConfigurationInputStream = null;
         try {
@@ -54,13 +68,13 @@ public final class Configuration {
                 }
             }
         } catch (final IOException e) {
-            logger.error(e.getMessage(), e) ;
+            System.err.println(e.getMessage());
         } finally {
             if (plugingConfigurationInputStream != null) {
                 try {
                     plugingConfigurationInputStream.close();
                 } catch (final IOException ex) {
-                    logger.error(ex.getMessage(), ex) ;
+                    System.err.println(ex.getMessage()) ;
                 }
             }
         }
@@ -83,13 +97,13 @@ public final class Configuration {
                 }
             }
         } catch (final IOException e) {
-            logger.error(e.getMessage(), e) ;
+            System.err.println(e.getMessage()) ;
         } finally {
             if (configurationInputStream != null) {
                 try {
                     configurationInputStream.close();
                 } catch (final IOException ex) {
-                    logger.error(ex.getMessage(), ex) ;
+                    System.err.println(ex.getMessage()) ;
                 }
             }
         }
@@ -102,7 +116,12 @@ public final class Configuration {
 
     /** Processing mode */
     public enum Mode {
-        STRICT, SKIP, LAX
+        /** Processing fails on error. */
+        STRICT,
+        /** Processing continues after error and will not attempt error recovery */
+        SKIP,
+        /** Processing continues after error with error recovery */
+        LAX
     }
     
     /** Private constructor to disallow instance creation. */
@@ -121,10 +140,27 @@ public final class Configuration {
                 }
             }
         } else {
-            new DITAOTJavaLogger().error("Failed to read print transtypes from configuration, using defaults.");
+            System.err.println("Failed to read print transtypes from configuration, using defaults.");
             types.add(TRANS_TYPE_PDF);
         }
         printTranstype = Collections.unmodifiableList(types);
+    }
+
+    /** List of transtypes. */
+    public static final List<String> transtypes;
+    static {
+        final List<String> types = new ArrayList<>();
+        final String printTranstypes = Configuration.configuration.get(CONF_TRANSTYPES);
+        if (printTranstypes != null) {
+            if (printTranstypes.trim().length() > 0) {
+                for (final String transtype: printTranstypes.split(CONF_LIST_SEPARATOR)) {
+                    types.add(transtype.trim());
+                }
+            }
+        } else {
+            System.err.println("Failed to read transtypes from configuration, using empty list.");
+        }
+        transtypes = Collections.unmodifiableList(types);
     }
 
     /** Map of plug-in resource directories. */
@@ -141,15 +177,30 @@ public final class Configuration {
     }
     
     public static final Map<String, String> parserMap;
+    public static final Map<String, Map<String, Boolean>> parserFeatures;
     static {
         final Map<String, String> m = new HashMap<>();
+        final Map<String, Map<String, Boolean>> f = new HashMap<>();
         for (final Map.Entry<String, String> e: configuration.entrySet()) {
             final String key = e.getKey();
-            if (key.startsWith("parser.")) {
-                m.put(key.substring(7), e.getValue());
+            if (key.startsWith(CONF_PARSER_FORMAT) && key.indexOf('.', CONF_PARSER_FORMAT.length()) == -1) {
+                final String format = key.substring(CONF_PARSER_FORMAT.length());
+                final String cls = e.getValue();
+                m.put(format, cls);
+
+                final String fs = configuration.get(CONF_PARSER_FORMAT + format + ".features");
+                if (fs != null) {
+                    for (final String pairs : fs.split(";")) {
+                        final String[] tokens = pairs.split("=");
+                        Map<String, Boolean> fm = f.getOrDefault(format, new HashMap<>());
+                        fm.put(tokens[0], Boolean.parseBoolean(tokens[1]));
+                        f.put(format, fm);
+                    }
+                }
             }
         }
         parserMap = Collections.unmodifiableMap(m);
+        parserFeatures = Collections.unmodifiableMap(f);
     }
 
     public static final Set<String> ditaFormat;
@@ -157,8 +208,8 @@ public final class Configuration {
         final Set<String> s = new HashSet<>();
         for (final Map.Entry<String, String> e: configuration.entrySet()) {
             final String key = e.getKey();
-            if (key.startsWith("parser.")) {
-                s.add(key.substring(7));
+            if (key.startsWith(CONF_PARSER_FORMAT) && key.indexOf('.', CONF_PARSER_FORMAT.length()) == -1) {
+                s.add(key.substring(CONF_PARSER_FORMAT.length()));
             }
         }
         ditaFormat = Collections.unmodifiableSet(s);

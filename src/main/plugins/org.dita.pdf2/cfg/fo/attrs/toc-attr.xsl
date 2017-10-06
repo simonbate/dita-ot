@@ -27,8 +27,8 @@ These terms and conditions supersede the terms and conditions in any
 licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
-This file is part of the DITA Open Toolkit project hosted on Sourceforge.net. 
-See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project.
+See the accompanying LICENSE file for applicable license.
 -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -149,7 +149,6 @@ See the accompanying license.txt file for applicable licenses.
 
     <xsl:attribute-set name="__toc__mini__label">
         <xsl:attribute name="keep-together.within-line">always</xsl:attribute>
-        <xsl:attribute name="keep-with-next.within-line">always</xsl:attribute>
         <xsl:attribute name="end-indent">label-end()</xsl:attribute>
     </xsl:attribute-set>
 
@@ -180,7 +179,7 @@ See the accompanying license.txt file for applicable licenses.
     </xsl:attribute-set>
 
      <xsl:attribute-set name="__toc__mini__summary" use-attribute-sets="common.border__left">
-         <xsl:attribute name="padding-left">10pt</xsl:attribute>
+         <xsl:attribute name="padding-start">10pt</xsl:attribute>
     </xsl:attribute-set>
 
     <xsl:attribute-set name="__toc__topic__content__booklist" use-attribute-sets="__toc__topic__content">

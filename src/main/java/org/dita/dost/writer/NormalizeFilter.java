@@ -1,6 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2013 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.writer;
 
@@ -15,8 +18,6 @@ import java.util.LinkedList;
 
 import static org.dita.dost.util.Configuration.configuration;
 import static org.dita.dost.util.Constants.*;
-import static org.dita.dost.writer.ImageMetadataFilter.DITA_OT_NS;
-import static org.dita.dost.writer.ImageMetadataFilter.DITA_OT_PREFIX;
 
 /**
  * Normalize content.
@@ -49,7 +50,7 @@ public final class NormalizeFilter extends AbstractXMLFilter {
             throws SAXException {
         depth++;
         if (depth == 1) {
-            super.startPrefixMapping(DITA_OT_PREFIX, DITA_OT_NS);
+            super.startPrefixMapping(DITA_OT_NS_PREFIX, DITA_OT_NS);
         }
 
         final AttributesImpl res = new AttributesImpl(atts);
@@ -58,9 +59,7 @@ public final class NormalizeFilter extends AbstractXMLFilter {
         if (MAP_MAP.matches(cls)) {
             if (res.getIndex(ATTRIBUTE_NAME_CASCADE) == -1) {
                 XMLUtils.addOrSetAttribute(res, ATTRIBUTE_NAME_CASCADE,
-                        configuration.containsKey("default.cascade")
-                        ? configuration.get("default.cascade")
-                        : ATTRIBUTE_CASCADE_VALUE_MERGE); 
+                        configuration.getOrDefault("default.cascade", ATTRIBUTE_CASCADE_VALUE_MERGE));
             }
         }
 
@@ -72,7 +71,7 @@ public final class NormalizeFilter extends AbstractXMLFilter {
         getContentHandler().endElement(uri, localName, qName);
 
         if (depth == 1) {
-            super.endPrefixMapping(DITA_OT_PREFIX);
+            super.endPrefixMapping(DITA_OT_NS_PREFIX);
         }
         depth--;
     }

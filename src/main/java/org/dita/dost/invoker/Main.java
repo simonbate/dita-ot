@@ -1,6 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2013 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 /* Derived from Apache Ant. */
 /*
@@ -23,21 +26,11 @@
 
 package org.dita.dost.invoker;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.Vector;
+import java.io.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.BuildListener;
 import org.apache.tools.ant.BuildLogger;
@@ -60,6 +53,18 @@ import org.apache.tools.ant.util.ClasspathUtils;
 import org.apache.tools.ant.util.FileUtils;
 import org.apache.tools.ant.util.ProxySetup;
 import org.dita.dost.util.Configuration;
+import org.dita.dost.util.XMLUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import static org.dita.dost.util.Constants.ANT_TEMP_DIR;
+import static org.dita.dost.util.Constants.PLUGIN_CONF;
+import static org.dita.dost.util.XMLUtils.getChildElements;
+import static org.dita.dost.util.XMLUtils.toList;
 
 /**
  * Command line entry point into DITA-OT. This class is entered via the canonical
@@ -67,6 +72,8 @@ import org.dita.dost.util.Configuration;
  * It then assembles and executes an Ant project.
  */
 public class Main extends org.apache.tools.ant.Main implements AntMain {
+
+    private boolean useColor;
 
     private static abstract class Argument {
         final String property;
@@ -89,6 +96,22 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         }
     }
 
+    private static class EnumArgument extends Argument {
+        final Set<String> values;
+        EnumArgument(final String property, final Set<String> values) {
+            super(property);
+            this.values = values;
+        }
+
+        @Override
+        String getValue(final String value) {
+            if (!values.contains(value)) {
+                throw new BuildException("Invalid value for property " + property + ": " + value);
+            }
+            return value;
+        }
+    }
+
     private static class FileArgument extends Argument {
         FileArgument(final String property) {
             super(property);
@@ -96,7 +119,31 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
 
         @Override
         String getValue(final String value) {
+            return new File(value).getPath();
+        }
+    }
+
+    private static class AbsoluteFileArgument extends Argument {
+        AbsoluteFileArgument(final String property) {
+            super(property);
+        }
+
+        @Override
+        String getValue(final String value) {
             return new File(value).getAbsolutePath();
+        }
+    }
+
+    private static class AbsoluteFileListArgument extends Argument {
+        AbsoluteFileListArgument(final String property) {
+            super(property);
+        }
+
+        @Override
+        String getValue(final String value) {
+            return Arrays.stream(value.split(File.pathSeparator))
+                    .map(oneFile -> new File(oneFile).getAbsolutePath())
+                    .collect(Collectors.joining(File.pathSeparator));
         }
     }
 
@@ -125,7 +172,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         LAUNCH_COMMANDS.add("-lib");
         LAUNCH_COMMANDS.add("-cp");
         LAUNCH_COMMANDS.add("-noclasspath");
-        LAUNCH_COMMANDS.add("--noclasspath");
+        LAUNCH_COMMANDS.add("-noclasspath");
         LAUNCH_COMMANDS.add("-nouserlib");
         LAUNCH_COMMANDS.add("-main");
     }
@@ -133,16 +180,76 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     private static final Map<String, Argument> ARGUMENTS = new HashMap<>();
     static {
         ARGUMENTS.put("-f", new StringArgument("transtype"));
-        ARGUMENTS.put("-format", new StringArgument("transtype"));
-        ARGUMENTS.put("-transtype", new StringArgument("transtype"));
+        ARGUMENTS.put("--format", new StringArgument("transtype"));
+        ARGUMENTS.put("--transtype", new StringArgument("transtype"));
         ARGUMENTS.put("-i", new FileOrUriArgument("args.input"));
-        ARGUMENTS.put("-input", new FileOrUriArgument("args.input"));
-        ARGUMENTS.put("-o", new FileArgument("output.dir"));
-        ARGUMENTS.put("-output", new FileArgument("output.dir"));
-        ARGUMENTS.put("-filter", new FileArgument("args.filter"));
-        ARGUMENTS.put("-t", new FileArgument("dita.temp.dir"));
-        ARGUMENTS.put("-temp", new FileArgument("dita.temp.dir"));
+        ARGUMENTS.put("--input", new FileOrUriArgument("args.input"));
+        ARGUMENTS.put("-o", new AbsoluteFileArgument("output.dir"));
+        ARGUMENTS.put("--output", new AbsoluteFileArgument("output.dir"));
+        ARGUMENTS.put("--filter", new AbsoluteFileListArgument("args.filter"));
+        ARGUMENTS.put("-t", new AbsoluteFileArgument(ANT_TEMP_DIR));
+        ARGUMENTS.put("--temp", new AbsoluteFileArgument(ANT_TEMP_DIR));
+        addSingleHyphenOptions(ARGUMENTS);
     }
+
+    private static void addSingleHyphenOptions(final Map<String, Argument> args) {
+        for (final Map.Entry<String, Argument> e : new HashMap<>(args).entrySet()) {
+            if (e.getKey().startsWith("--")) {
+                args.put(e.getKey().substring(1), e.getValue());
+            }
+        }
+    }
+
+    private static Map<String, Argument> PLUGIN_ARGUMENTS;
+
+    private synchronized Map<String, Argument> getPluginArguments() {
+        if (PLUGIN_ARGUMENTS == null) {
+            final List<Element> params = toList(getPluginConfiguration().getElementsByTagName("param"));
+            PLUGIN_ARGUMENTS = params.stream()
+                    .map(Main::getArgument)
+                    .collect(Collectors.toMap(
+                            arg -> ("--" + arg.property),
+                            arg -> arg,
+                            Main::mergeArguments));
+        }
+        return PLUGIN_ARGUMENTS;
+    }
+
+    private static Argument mergeArguments(final Argument a, final Argument b) {
+        if (a instanceof EnumArgument && b instanceof EnumArgument) {
+            final Set<String> vals = ImmutableSet.<String>builder()
+                    .addAll(((EnumArgument) a).values)
+                    .addAll(((EnumArgument) b).values)
+                    .build();
+            return new EnumArgument(a.property, vals);
+        } else {
+            return a;
+        }
+    }
+
+    private static Argument getArgument(Element param) {
+        final String name = param.getAttribute("name");
+        final String type = param.getAttribute("type");
+        if (type.equals("file")) {
+            return new FileArgument(name);
+        } else if (type.equals("enum")) {
+            final Set<String> vals = getChildElements(param).stream()
+                    .map(XMLUtils::getText)
+                    .collect(Collectors.toSet());
+            return new EnumArgument(name, vals);
+        } else {
+            return new StringArgument(name);
+        }
+    }
+
+    private Document getPluginConfiguration() {
+        try (final InputStream in = getClass().getClassLoader().getResourceAsStream(PLUGIN_CONF)) {
+            return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(in);
+        } catch (final ParserConfigurationException | SAXException | IOException e) {
+            throw new RuntimeException("Failed to read plugin configuration: " + e.getMessage(), e);
+        }
+    }
+
     private static final Map<String, String> RESERVED_PROPERTIES = new HashMap<>();
     static {
         for (final Map.Entry<String, Argument> a: ARGUMENTS.entrySet()) {
@@ -150,13 +257,14 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         }
     }
 
+    @Deprecated
     private static final Map<String, Argument> LEGACY_ARGUMENTS = new HashMap<>();
     static {
         // LEGACY_ARGUMENTS.put("/basedir", new StringArgument("basedir"));
         // LEGACY_ARGUMENTS.put("/ditadir", new StringArgument("dita.dir"));
-        LEGACY_ARGUMENTS.put("/i", new FileArgument("args.input"));
-        LEGACY_ARGUMENTS.put("/if", new FileArgument("dita.input"));
-        LEGACY_ARGUMENTS.put("/id", new FileArgument("dita.input.dirname"));
+        LEGACY_ARGUMENTS.put("/i", new AbsoluteFileArgument("args.input"));
+        LEGACY_ARGUMENTS.put("/if", new AbsoluteFileArgument("dita.input"));
+        LEGACY_ARGUMENTS.put("/id", new AbsoluteFileArgument("dita.input.dirname"));
         LEGACY_ARGUMENTS.put("/artlbl", new StringArgument("args.artlbl"));
         LEGACY_ARGUMENTS.put("/draft", new StringArgument("args.draft"));
         LEGACY_ARGUMENTS.put("/ftr", new StringArgument("args.ftr"));
@@ -165,15 +273,15 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         LEGACY_ARGUMENTS.put("/csspath", new StringArgument("args.csspath"));
         LEGACY_ARGUMENTS.put("/cssroot", new StringArgument("args.cssroot"));
         LEGACY_ARGUMENTS.put("/css", new StringArgument("args.css"));
-        LEGACY_ARGUMENTS.put("/filter", new FileArgument("args.filter"));
-        LEGACY_ARGUMENTS.put("/outdir", new FileArgument("output.dir"));
+        LEGACY_ARGUMENTS.put("/filter", new AbsoluteFileArgument("args.filter"));
+        LEGACY_ARGUMENTS.put("/outdir", new AbsoluteFileArgument("output.dir"));
         LEGACY_ARGUMENTS.put("/transtype", new StringArgument("transtype"));
         LEGACY_ARGUMENTS.put("/indexshow", new StringArgument("args.indexshow"));
         LEGACY_ARGUMENTS.put("/outext", new StringArgument("args.outext"));
         LEGACY_ARGUMENTS.put("/copycss", new StringArgument("args.copycss"));
-        LEGACY_ARGUMENTS.put("/xsl", new FileArgument("args.xsl"));
-        LEGACY_ARGUMENTS.put("/xslpdf", new FileArgument("args.xsl.pdf"));
-        LEGACY_ARGUMENTS.put("/tempdir", new FileArgument("dita.temp.dir"));
+        LEGACY_ARGUMENTS.put("/xsl", new AbsoluteFileArgument("args.xsl"));
+        LEGACY_ARGUMENTS.put("/xslpdf", new AbsoluteFileArgument("args.xsl.pdf"));
+        LEGACY_ARGUMENTS.put("/tempdir", new AbsoluteFileArgument(ANT_TEMP_DIR));
         LEGACY_ARGUMENTS.put("/cleantemp", new StringArgument("clean.temp"));
         LEGACY_ARGUMENTS.put("/foimgext", new StringArgument("args.fo.img.ext"));
         LEGACY_ARGUMENTS.put("/javahelptoc", new StringArgument("args.javahelp.toc"));
@@ -183,7 +291,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         LEGACY_ARGUMENTS.put("/xhtmltoc", new StringArgument("args.xhtml.toc"));
         LEGACY_ARGUMENTS.put("/xhtmlclass", new StringArgument("args.xhtml.classattr"));
         LEGACY_ARGUMENTS.put("/usetasklabels", new StringArgument("args.gen.task.lbl"));
-        LEGACY_ARGUMENTS.put("/logdir", new FileArgument("args.logdir"));
+        LEGACY_ARGUMENTS.put("/logdir", new AbsoluteFileArgument("args.logdir"));
         LEGACY_ARGUMENTS.put("/ditalocale", new StringArgument("args.dita.locale"));
         LEGACY_ARGUMENTS.put("/fooutputrellinks", new StringArgument("args.fo.output.rel.links"));
         LEGACY_ARGUMENTS.put("/foincluderellinks", new StringArgument("args.fo.include.rellinks"));
@@ -214,7 +322,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     private boolean install;
     /** Plug-in installation file. May be either a system path or a URL. */
     private String installFile;
-    
+
     /** Plug-in uninstall ID. */
     private String uninstallId;
 
@@ -290,14 +398,24 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     /**
      * Prints the message of the Throwable if it (the message) is not
      * <code>null</code>.
-     * 
+     *
      * @param t Throwable to print the message of. Must not be <code>null</code>
      *            .
      */
-    private static void printMessage(final Throwable t) {
+    private void printMessage(final Throwable t) {
         final String message = t.getMessage();
         if (message != null && !message.trim().isEmpty()) {
-            System.err.println("Error: " + message);
+            printErrorMessage("Error: " + message);
+        }
+    }
+
+    private void printErrorMessage(final String msg) {
+        if (useColor) {
+            System.err.print(DefaultLogger.ANSI_RED);
+            System.err.print("Error: " + msg);
+            System.err.println(DefaultLogger.ANSI_RESET);
+        } else {
+            System.err.println("Error: " + msg);
         }
     }
 
@@ -305,7 +423,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
      * Creates a new instance of this class using the arguments specified, gives
      * it any extra user properties which have been specified, and then runs the
      * build using the classloader provided.
-     * 
+     *
      * @param args Command line arguments. Must not be <code>null</code>.
      * @param additionalUserProperties Any extra properties to use in this
      *            build. May be <code>null</code>, which is the equivalent to
@@ -322,12 +440,12 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
 
     /**
      * Start Ant
-     * 
+     *
      * @param args command line args
      * @param additionalUserProperties properties to set beyond those that may
      *            be specified on the args list
      * @param coreLoader - not used
-     * 
+     *
      * @since Ant 1.6
      */
     @Override
@@ -335,6 +453,16 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
 
         try {
             processArgs(args);
+        } catch (final BuildException exc) {
+            handleLogfile();
+            printMessage(exc);
+            exit(1);
+            return;
+        } catch (final RuntimeException e) {
+            handleLogfile();
+            e.printStackTrace();
+            exit(1);
+            return;
         } catch (final Throwable exc) {
             handleLogfile();
             printMessage(exc);
@@ -378,7 +506,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     /**
      * This operation is expected to call {@link System#exit(int)}, which is
      * what the base version does. However, it is possible to do something else.
-     * 
+     *
      * @param exitCode code to exit with
      */
     @Override
@@ -388,7 +516,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
 
     /**
      * Close logfiles, if we have been writing to them.
-     * 
+     *
      * @since Ant 1.6
      */
     private static void handleLogfile() {
@@ -402,7 +530,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
      * Command line entry point. This method kicks off the building of a project
      * object and executes a build using either a given target or the default
      * target.
-     * 
+     *
      * @param args Command line arguments. Must not be <code>null</code>.
      */
     public static void main(final String[] args) {
@@ -418,12 +546,12 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     /**
      * Process command line arguments. When ant is started from Launcher,
      * launcher-only arguments do not get passed through to this routine.
-     * 
-     * @param args the command line arguments.
-     * 
+     *
+     * @param arguments the command line arguments.
+     *
      * @since Ant 1.6
      */
-    private void processArgs(final String[] args) {
+    private void processArgs(final String[] arguments) {
         String searchForThis = null;
         boolean searchForFile = false;
         PrintStream logTo = null;
@@ -433,73 +561,64 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         boolean justPrintUsage = false;
         boolean justPrintVersion = false;
         boolean justPrintDiagnostics = false;
+        useColor = getUseColor();
 
-        for (int i = 0; i < args.length; i++) {
-            final String arg = args[i];
+        final Deque<String> args = new ArrayDeque<>(Arrays.asList(arguments));
+        while (!args.isEmpty()) {
+            final String arg = args.pop();
 
-            if (arg.equals("-help") || arg.equals("-h")) {
+            if (isLongForm(arg, "-help") || arg.equals("-h")) {
                 justPrintUsage = true;
-            } else if (arg.equals("-version")) {
+            } else if (isLongForm(arg, "-version")) {
                 justPrintVersion = true;
-            } else if (arg.equals("-install")) {
-                i = handleArgInstall(args, i);
-            } else if (arg.equals("-uninstall")) {
-                i = handleArgUninstall(args, i);
-            } else if (arg.equals("-diagnostics")) {
+            } else if (isLongForm(arg, "-install")) {
+                handleArgInstall(arg, args);
+            } else if (isLongForm(arg, "-uninstall")) {
+                handleArgUninstall(args);
+            } else if (isLongForm(arg, "-diagnostics")) {
                 justPrintDiagnostics = true;
                 // } else if (arg.equals("-quiet") || arg.equals("-q")) {
                 // msgOutputLevel = Project.MSG_WARN;
-            } else if (arg.equals("-verbose") || arg.equals("-v")) {
+            } else if (isLongForm(arg, "-verbose") || arg.equals("-v")) {
                 msgOutputLevel = Project.MSG_INFO;
-            } else if (arg.equals("-debug") || arg.equals("-d")) {
+            } else if (isLongForm(arg, "-debug") || arg.equals("-d")) {
                 msgOutputLevel = Project.MSG_VERBOSE;
-            } else if (arg.equals("-noinput")) {
+            } else if (isLongForm(arg, "-noinput")) {
                 allowInput = false;
-            } else if (arg.equals("-logfile") || arg.equals("-l")) {
-                try {
-                    final File logFile = new File(args[i + 1]);
-                    i++;
-                    logTo = new PrintStream(new FileOutputStream(logFile));
-                    isLogFileUsed = true;
-                } catch (final IOException ioe) {
-                    final String msg = "Cannot write on the specified log file. "
-                            + "Make sure the path exists and you have write " + "permissions.";
-                    throw new BuildException(msg);
-                } catch (final ArrayIndexOutOfBoundsException aioobe) {
-                    final String msg = "You must specify a log file when " + "using the -log argument";
-                    throw new BuildException(msg);
-                }
-            } else if (arg.equals("-buildfile") || arg.equals("-file")) { //|| arg.equals("-f")
-                i = handleArgBuildFile(args, i);
-            } else if (arg.equals("-listener")) {
-                i = handleArgListener(args, i);
+            } else if (isLongForm(arg, "-logfile") || arg.equals("-l")) {
+                logTo = handleArgLogFile(args);
+            } else if (isLongForm(arg, "-buildfile") || isLongForm(arg, "-file")) { //|| arg.equals("-f")
+                handleArgBuildFile(args);
+            } else if (isLongForm(arg, "-listener")) {
+                handleArgListener(args);
             } else if (arg.startsWith("-D")) {
-                i = handleArgDefine(args, i);
-            } else if (arg.equals("-logger")) {
-                i = handleArgLogger(args, i);
-            } else if (arg.equals("-inputhandler")) {
-                i = handleArgInputHandler(args, i);
-            } else if (arg.equals("-emacs") || arg.equals("-e")) {
+                handleArgDefine(arg, args);
+            } else if (isLongForm(arg, "-logger")) {
+                handleArgLogger(args);
+            } else if (isLongForm(arg, "-inputhandler")) {
+                handleArgInputHandler(args);
+            } else if (isLongForm(arg, "-emacs") || arg.equals("-e")) {
                 emacsMode = true;
-            } else if (arg.equals("-projecthelp") || arg.equals("-p")) {
+            } else if (isLongForm(arg, "-projecthelp") || arg.equals("-p")) {
                 // set the flag to display the targets and quit
                 projectHelp = true;
-            } else if (arg.equals("-find") || arg.equals("-s")) {
+            } else if (isLongForm(arg, "-find") || arg.equals("-s")) {
                 searchForFile = true;
+                args.pop();
                 // eat up next arg if present, default to build.xml
-                if (i < args.length - 1) {
-                    searchForThis = args[++i];
-                }
-            } else if (arg.startsWith("-propertyfile")) {
-                i = handleArgPropertyFile(args, i);
-            } else if (arg.equals("-k") || arg.equals("-keep-going")) {
+                searchForThis = args.peek();
+            } else if (isLongForm(arg, "-propertyfile")) {
+                handleArgPropertyFile(arg, args);
+            } else if (arg.equals("-k") || isLongForm(arg, "-keep-going")) {
                 keepGoingMode = true;
-            } else if (arg.equals("-nice")) {
-                i = handleArgNice(args, i);
+            } else if (isLongForm(arg, "-nice")) {
+                handleArgNice(args);
             } else if (ARGUMENTS.containsKey(getArgumentName(arg))) {
-                i = handleParameterArg(args, i);
+                handleParameterArg(arg, args, ARGUMENTS.get(getArgumentName(arg)));
+            } else if (getPluginArguments().containsKey(getArgumentName(arg))) {
+                handleParameterArg(arg, args, getPluginArguments().get(getArgumentName(arg)));
             } else if (LEGACY_ARGUMENTS.containsKey(getArgumentName(arg))) {
-                i = handleLegacyParameterArg(args, i);
+                handleLegacyParameterArg(arg, args);
             } else if (LAUNCH_COMMANDS.contains(arg)) {
                 // catch script/ant mismatch with a meaningful message
                 // we could ignore it, but there are likely to be other
@@ -509,12 +628,12 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
                         + "\nThis can be caused by a version mismatch between "
                         + "the ant script/.bat file and Ant itself.";
                 throw new BuildException(msg);
-            } else if (arg.equals("-autoproxy")) {
+            } else if (isLongForm(arg, "-autoproxy")) {
                 proxy = true;
             } else if (arg.startsWith("-") || arg.startsWith("/")) {
                 // we don't have any more args to recognize!
                 final String msg = "Error: Unknown argument: " + arg;
-                System.err.println(msg);
+                printErrorMessage(msg);
                 printUsage();
                 throw new BuildException("");
             } else {
@@ -522,6 +641,9 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
                 targets.addElement(arg);
             }
         }
+
+        // Load the property files specified by --propertyfile
+        loadPropertyFiles();
 
         if (justPrintUsage || justPrintVersion || justPrintDiagnostics) {
             if (justPrintVersion) {
@@ -538,7 +660,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
             buildFile = findBuildFile(System.getProperty("dita.dir"), "integrator.xml");
             targets.clear();
             if (installFile != null) {
-                targets.add("install");                
+                targets.add("install");
                 final File f = new File(installFile.replace('/', File.separatorChar)).getAbsoluteFile();
                 if (f.exists()) {
                     definedProps.put("plugin.file", f.getAbsolutePath());
@@ -553,13 +675,13 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
             }
         } else {
             if (!definedProps.containsKey("transtype")) {
-                System.err.println("Error: Transformation type not defined");
+                printErrorMessage("Error: Transformation type not defined");
                 printUsage();
                 throw new BuildException("");
                 //justPrintUsage = true;
             }
             if (!definedProps.containsKey("args.input")) {
-                System.err.println("Error: Input file not defined");
+                printErrorMessage("Error: Input file not defined");
                 printUsage();
                 throw new BuildException("");
                 //justPrintUsage = true;
@@ -568,14 +690,14 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
             if (!definedProps.containsKey("output.dir")) {
                 definedProps.put("output.dir", new File(new File("."), "out").getAbsolutePath());
             }
-            if (!definedProps.containsKey("base.temp.dir") && !definedProps.containsKey("dita.temp.dir")) {
+            if (!definedProps.containsKey("base.temp.dir") && !definedProps.containsKey(ANT_TEMP_DIR)) {
                 definedProps.put("base.temp.dir", new File(System.getProperty("java.io.tmpdir")).getAbsolutePath());
             }
         }
 
         // if buildFile was not specified on the command line,
         if (buildFile == null) {
-            // but -find then search for it
+            // but --find then search for it
             if (searchForFile) {
                 if (searchForThis != null) {
                     buildFile = findBuildFile(System.getProperty("user.dir"), searchForThis);
@@ -630,9 +752,6 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         // Normalize buildFile for re-import detection
         buildFile = FileUtils.getFileUtils().normalize(buildFile.getAbsolutePath());
 
-        // Load the property files specified by -propertyfile
-        loadPropertyFiles();
-
         if (msgOutputLevel >= Project.MSG_VERBOSE) {
             System.out.println("Buildfile: " + buildFile);
         }
@@ -646,54 +765,81 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         readyToRun = true;
     }
 
+    private boolean getUseColor() {
+        final String os = System.getProperty("os.name");
+        if (os != null && os.startsWith("Windows")) {
+            return false;
+        }
+        return Boolean.parseBoolean(Configuration.configuration.getOrDefault("cli.color", "true"));
+    }
+
+    private PrintStream handleArgLogFile(Deque<String> args) {
+        PrintStream logTo;
+        final String value = args.pop();
+        try {
+            final File logFile = new File(value);
+            logTo = new PrintStream(new FileOutputStream(logFile));
+            isLogFileUsed = true;
+            useColor = false;
+        } catch (final IOException ioe) {
+            final String msg = "Cannot write on the specified log file. "
+                    + "Make sure the path exists and you have write " + "permissions.";
+            throw new BuildException(msg);
+        } catch (final ArrayIndexOutOfBoundsException aioobe) {
+            final String msg = "You must specify a log file when " + "using the --log argument";
+            throw new BuildException(msg);
+        }
+        return logTo;
+    }
+
+    private boolean isLongForm(String arg, String property) {
+        final String name = arg.contains("=") ? arg.substring(0, arg.indexOf('=')) : arg;
+        return name.equals(property) || name.equals("-" + property);
+    }
+
     // --------------------------------------------------------
     // Methods for handling the command line arguments
     // --------------------------------------------------------
 
-    /** Handle the -install argument */
-    private int handleArgInstall(final String[] args, int pos) {
+    /** Handle the --install argument */
+    private void handleArgInstall(final String arg, final Deque<String> args) {
         install = true;
-        if (pos + 1 < args.length && !args[pos + 1].startsWith("-")) {
-            installFile = args[++pos];
+        final String value = args.peek();
+        if (value != null && !value.startsWith("-")) {
+            installFile = args.pop();
         }
-        return pos;
-    }
-    
-    /** Handle the -uninstall argument */
-    private int handleArgUninstall(final String[] args, int pos) {
-        try {
-            install = true;
-            uninstallId = args[++pos];
-        } catch (final ArrayIndexOutOfBoundsException aioobe) {
-            throw new BuildException("You must specify a installation package when using the -uninstall argument");
-        }
-        return pos;
-    }
-    
-    /** Handle the -buildfile, -file, -f argument */
-    private int handleArgBuildFile(final String[] args, int pos) {
-        try {
-            buildFile = new File(args[++pos].replace('/', File.separatorChar));
-        } catch (final ArrayIndexOutOfBoundsException aioobe) {
-            throw new BuildException("You must specify a buildfile when using the -buildfile argument");
-        }
-        return pos;
     }
 
-    /** Handle -listener argument */
-    private int handleArgListener(final String[] args, int pos) {
-        try {
-            listeners.addElement(args[pos + 1]);
-            pos++;
-        } catch (final ArrayIndexOutOfBoundsException aioobe) {
-            final String msg = "You must specify a classname when " + "using the -listener argument";
-            throw new BuildException(msg);
+    /** Handle the --uninstall argument */
+    private void handleArgUninstall(final Deque<String> args) {
+        install = true;
+        final String value = args.pop();
+        if (value == null) {
+            throw new BuildException("You must specify a installation package when using the --uninstall argument");
         }
-        return pos;
+        uninstallId = value;
+    }
+
+    /** Handle the --buildfile, --file, -f argument */
+    private void handleArgBuildFile(final Deque<String> args) {
+        final String value = args.pop();
+        if (value == null) {
+            throw new BuildException("You must specify a buildfile when using the --buildfile argument");
+        }
+        buildFile = new File(value.replace('/', File.separatorChar));
+    }
+
+    /** Handle --listener argument */
+    private void handleArgListener(final Deque<String> args) {
+        final String value = args.pop();
+        if (value == null) {
+            throw new BuildException("You must specify a classname when using the --listener argument");
+        }
+        listeners.addElement(value);
     }
 
     /** Handler -D argument */
-    private int handleArgDefine(final String[] args, int argPos) {
+    private void handleArgDefine(final String arg, final Deque<String> args) {
         /*
          * Interestingly enough, we get to here when a user uses -Dname=value.
          * However, in some cases, the OS goes ahead and parses this out to args
@@ -703,64 +849,61 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
          * I don't know how to predict when the JDK is going to help or not, so
          * we simply look for the equals sign.
          */
-        final String arg = args[argPos];
         String name = arg.substring(2, arg.length());
-        String value = null;
+        String value;
         final int posEq = name.indexOf("=");
         if (posEq > 0) {
             value = name.substring(posEq + 1);
             name = name.substring(0, posEq);
-        } else if (argPos < args.length - 1) {
-            value = args[++argPos];
         } else {
+            value = args.pop();
+        }
+        if (value == null) {
             throw new BuildException("Missing value for property " + name);
         }
-        
+
         if (RESERVED_PROPERTIES.containsKey(name)) {
             throw new BuildException("Property " + name + " cannot be set with -D, use " + RESERVED_PROPERTIES.get(name) + " instead");
         }
         definedProps.put(name, value);
-        return argPos;
     }
 
     /** Handler parameter argument */
-    private int handleParameterArg(final String[] args, int argPos) {
-        final String arg = args[argPos];
-        String name = arg.substring(0, arg.length());
-        String value = null;
-        int posEq = name.indexOf("=");
+    private void handleParameterArg(final String arg, final Deque<String> args, final Argument argument) {
+        String name = arg;
+        String value;
+        final int posEq = name.indexOf("=");
         if (posEq > 0) {
             value = name.substring(posEq + 1);
             name = name.substring(0, posEq);
-        } else if (argPos < args.length - 1) {
-            value = args[++argPos];
         } else {
+            value = args.pop();
+        }
+        if (value == null) {
             throw new BuildException("Missing value for property " + name);
         }
-        final Argument a = ARGUMENTS.get(name);
-        
-        definedProps.put(a.property, a.getValue(value));
-        return argPos;
+
+        definedProps.put(argument.property, argument.getValue(value));
     }
-    
+
     /** Handler legacy parameter argument */
-    private int handleLegacyParameterArg(final String[] args, int argPos) {
-        final String arg = args[argPos];
+    @Deprecated
+    private void handleLegacyParameterArg(final String arg, final Deque<String> args) {
         String name = arg.substring(0, arg.length());
-        String value = null;
+        String value;
         int posEq = name.indexOf(":");
         if (posEq > 0) {
             value = name.substring(posEq + 1);
             name = name.substring(0, posEq);
-        } else if (argPos < args.length - 1) {
-            value = args[++argPos];
         } else {
+            value = args.pop();
+        }
+        if (value == null) {
             throw new BuildException("Missing value for property " + name);
         }
         final Argument a = LEGACY_ARGUMENTS.get(name);
-        
+
         definedProps.put(a.property, a.getValue(value));
-        return argPos;
     }
 
     /** Get argument name */
@@ -772,60 +915,63 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         return arg.substring(0, pos != -1 ? pos : arg.length());
     }
 
-    /** Handle the -logger argument. */
-    private int handleArgLogger(final String[] args, int pos) {
+    /** Handle the --logger argument. */
+    private void handleArgLogger(final Deque<String> args) {
         if (loggerClassname != null) {
             throw new BuildException("Only one logger class may be specified.");
         }
-        try {
-            loggerClassname = args[++pos];
-        } catch (final ArrayIndexOutOfBoundsException aioobe) {
+        loggerClassname = args.pop();
+        if (loggerClassname == null) {
             throw new BuildException("You must specify a classname when using the -logger argument");
         }
-        return pos;
     }
 
-    /** Handle the -inputhandler argument. */
-    private int handleArgInputHandler(final String[] args, int pos) {
+    /** Handle the --inputhandler argument. */
+    private void handleArgInputHandler(final Deque<String> args) {
         if (inputHandlerClassname != null) {
-            throw new BuildException("Only one input handler class may " + "be specified.");
+            throw new BuildException("Only one input handler class may be specified.");
         }
-        try {
-            inputHandlerClassname = args[++pos];
-        } catch (final ArrayIndexOutOfBoundsException aioobe) {
-            throw new BuildException("You must specify a classname when" + " using the -inputhandler" + " argument");
+        inputHandlerClassname = args.pop();
+        if (inputHandlerClassname == null) {
+            throw new BuildException("You must specify a classname when using the --inputhandler" + " argument");
         }
-        return pos;
     }
 
-    /** Handle the -propertyfile argument. */
-    private int handleArgPropertyFile(final String[] args, int pos) {
-        try {
-            propertyFiles.addElement(args[++pos]);
-        } catch (final ArrayIndexOutOfBoundsException aioobe) {
-            final String msg = "You must specify a property filename when " + "using the -propertyfile argument";
-            throw new BuildException(msg);
+    /** Handle the --propertyfile argument. */
+    private void handleArgPropertyFile(final String arg, final Deque<String> args) {
+        String name = arg.substring(2, arg.length());
+        String value;
+        final int posEq = name.indexOf("=");
+        if (posEq > 0) {
+            value = name.substring(posEq + 1);
+            name = name.substring(0, posEq);
+        } else {
+            value = args.pop();
         }
-        return pos;
+        if (value == null) {
+            throw new BuildException("You must specify a property filename when using the --propertyfile argument");
+        }
+        propertyFiles.addElement(value);
     }
 
-    /** Handle the -nice argument. */
-    private int handleArgNice(final String[] args, int pos) {
+    /** Handle the --nice argument. */
+    private void handleArgNice(final Deque<String> args) {
+        final String value = args.pop();
+        if (value == null) {
+            throw new BuildException("You must supply a niceness value (1-10) after the --nice option");
+        }
         try {
-            threadPriority = Integer.decode(args[++pos]);
-        } catch (final ArrayIndexOutOfBoundsException aioobe) {
-            throw new BuildException("You must supply a niceness value (1-10)" + " after the -nice option");
+            threadPriority = Integer.decode(value);
         } catch (final NumberFormatException e) {
-            throw new BuildException("Unrecognized niceness value: " + args[pos]);
+            throw new BuildException("Unrecognized niceness value: " + value);
         }
 
         if (threadPriority < Thread.MIN_PRIORITY || threadPriority > Thread.MAX_PRIORITY) {
             throw new BuildException("Niceness value is out of the range 1-10");
         }
-        return pos;
     }
 
-    /** Load the property files specified by -propertyfile */
+    /** Load the property files specified by --propertyfile */
     private void loadPropertyFiles() {
         for (int propertyFileIndex = 0; propertyFileIndex < propertyFiles.size(); propertyFileIndex++) {
             final String filename = propertyFiles.elementAt(propertyFileIndex);
@@ -855,9 +1001,9 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
      * Helper to get the parent file for a given file.
      * <p>
      * Added to simulate File.getParentFile() from JDK 1.2.
-     * 
+     *
      * @deprecated since 1.6.x
-     * 
+     *
      * @param file File to find parent of. Must not be <code>null</code>.
      * @return Parent file or null if none
      */
@@ -878,11 +1024,11 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
      * Takes the given target as a suffix to append to each parent directory in
      * search of a build file. Once the root of the file-system has been reached
      * <code>null</code> is returned.
-     * 
+     *
      * @param start Leaf directory of search. Must not be <code>null</code>.
      * @param suffix Suffix filename to look for in parents. Must not be
      *            <code>null</code>.
-     * 
+     *
      * @return A handle to the build file if one is found, <code>null</code> if
      *         not
      */
@@ -915,11 +1061,11 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     /**
      * Executes the build. If the constructor for this instance failed (e.g.
      * returned after issuing a warning), this method returns immediately.
-     * 
+     *
      * @param coreLoader The classloader to use to find core classes. May be
      *            <code>null</code>, in which case the system classloader is
      *            used.
-     * 
+     *
      * @exception BuildException if the build fails
      */
     private void runBuild(final ClassLoader coreLoader) throws BuildException {
@@ -942,8 +1088,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
             final InputStream savedIn = System.in;
 
             // use a system manager that prevents from System.exit()
-            SecurityManager oldsm = null;
-            oldsm = System.getSecurityManager();
+            final SecurityManager oldsm = System.getSecurityManager();
 
             // SecurityManager can not be installed here for backwards
             // compatibility reasons (PD). Needs to be loaded prior to
@@ -1034,10 +1179,10 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
                 } catch (final Throwable t) {
                     // yes, I know it is bad style to catch Throwable,
                     // but if we don't, we lose valuable information
-                    System.err.println("Caught an exception while logging the" + " end of the build.  Exception was:");
+                    printErrorMessage("Caught an exception while logging the" + " end of the build.  Exception was:");
                     t.printStackTrace();
                     if (error != null) {
-                        System.err.println("There has been an error prior to" + " that:");
+                        printErrorMessage("There has been an error prior to" + " that:");
                         error.printStackTrace();
                     }
                     throw new BuildException(t);
@@ -1051,7 +1196,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     /**
      * Adds the listeners specified in the command line arguments, along with
      * the default listener, to the specified project.
-     * 
+     *
      * @param project The project to add listeners to. Must not be
      *            <code>null</code>.
      */
@@ -1074,14 +1219,14 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
 
     /**
      * Creates the InputHandler and adds it to the project.
-     * 
+     *
      * @param project the project instance.
-     * 
+     *
      * @exception BuildException if a specified InputHandler implementation
      *                could not be loaded.
      */
     private void addInputHandler(final Project project) throws BuildException {
-        InputHandler handler = null;
+        InputHandler handler;
         if (inputHandlerClassname == null) {
             handler = new DefaultInputHandler();
         } else {
@@ -1098,22 +1243,23 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     // loggers could have failed to be created due to this failure)?
     /**
      * Creates the default build logger for sending build events to the ant log.
-     * 
+     *
      * @return the logger instance for this build.
      */
     private BuildLogger createLogger() {
-        BuildLogger logger = null;
+        BuildLogger logger;
         if (loggerClassname != null) {
             try {
                 logger = (BuildLogger) ClasspathUtils.newInstance(loggerClassname, Main.class.getClassLoader(),
                         BuildLogger.class);
             } catch (final BuildException e) {
-                System.err.println("The specified logger class " + loggerClassname + " could not be used because "
+                printErrorMessage("The specified logger class " + loggerClassname + " could not be used because "
                         + e.getMessage());
                 throw new RuntimeException();
             }
         } else {
             logger = new DefaultLogger();
+            ((DefaultLogger) logger).useColor(useColor);
         }
 
         logger.setMessageOutputLevel(msgOutputLevel);
@@ -1130,34 +1276,37 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     private static void printUsage() {
         final StringBuilder msg = new StringBuilder();
         msg.append("Usage: dita -i <file> -f <name> [options]\n");
-        msg.append("   or: dita -install [<file>]\n");
-        msg.append("   or: dita -uninstall <id>\n");
-        msg.append("   or: dita -help\n");
-        msg.append("   or: dita -version\n");
+        msg.append("   or: dita --propertyfile=<file> [options]\n");
+        msg.append("   or: dita --install [=<file>]\n");
+        msg.append("   or: dita --uninstall <id>\n");
+        msg.append("   or: dita --help\n");
+        msg.append("   or: dita --version\n");
         msg.append("Arguments: \n");
-        msg.append("  -i, -input <file>      input file\n");
-        msg.append("  -f, -format <name>     output format (transformation type)\n");
-        msg.append("  -install [<file>]      install plug-in from a ZIP file or reload plugins\n");
-        msg.append("  -uninstall <id>        uninstall plug-in with the ID\n");
-        msg.append("  -h, -help              print this message\n");
-        msg.append("  -version               print version information and exit\n");
+        msg.append("  -i <file>, --input=<file>   input file\n");
+        msg.append("  -f <name>, --format=<name>  output format (transformation type)\n");
+        msg.append("  --propertyfile=<name>       load all properties from file\n");
+        msg.append("  --install [<file>]          install plug-in from a ZIP file\n");
+        msg.append("  --install                   reload plugins\n");
+        msg.append("  --uninstall <id>            uninstall plug-in with the ID\n");
+        msg.append("  -h, --help                  print this message\n");
+        msg.append("  --version                   print version information and exit\n");
         msg.append("Options: \n");
-        msg.append("  -o, -output <dir>      output directory\n");
+        msg.append("  -o, --output=<dir>          output directory\n");
         // msg.append("  -projecthelp, -p       print project help information" + lSep);
         // msg.append("  -diagnostics           print information that might be helpful to"
         // + lSep);
         // msg.append("                         diagnose or report problems." +
         // lSep);
         // msg.append("  -quiet, -q             be extra quiet" + lSep);
-        msg.append("  -filter <file>         filter and flagging file\n");
-        msg.append("  -t, -temp <dir>        temporary directory\n");
-        msg.append("  -v, -verbose           verbose logging\n");
-        msg.append("  -d, -debug             print debugging information\n");
+        msg.append("  --filter=<files>            filter and flagging files\n");
+        msg.append("  -t, --temp=<dir>            temporary directory\n");
+        msg.append("  -v, --verbose               verbose logging\n");
+        msg.append("  -d, --debug                 print debugging information\n");
         // msg.append("  -emacs, -e             produce logging information without adornments"
         // + lSep);
         // msg.append("  -lib <path>            specifies a path to search for jars and classes"
         // + lSep);
-        msg.append("  -l, logfile <file>     use given file for log\n");
+        msg.append("  -l, --logfile=<file>        use given file for log\n");
         // msg.append("  -logger <classname>    the class which is to perform logging"
         // + lSep);
         // msg.append("  -listener <classname>  add an instance of class as a project listener"
@@ -1167,12 +1316,10 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
         // msg.append("  -buildfile <file>      use given buildfile" + lSep);
         // msg.append("    -file    <file>              ''" + lSep);
         // msg.append("    -f       <file>              ''" + lSep);
-        msg.append("  -D<property>=<value>   use value for given property\n");
+        msg.append("  --<property>=<value>        use value for given property\n");
         // msg.append("  -keep-going, -k        execute all targets that do not depend"
         // + lSep);
         // msg.append("                         on failed target(s)" + lSep);
-        msg.append("  -propertyfile <name>   load all properties from file with -D\n");
-        msg.append("                         properties taking precedence");
         // msg.append("  -inputhandler <class>  the class which will handle input requests"
         // + lSep);
         // msg.append("  -find <file>           (s)earch for buildfile towards the root of"
@@ -1197,7 +1344,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
 
     /**
      * Prints the Ant version information to <code>System.out</code>.
-     * 
+     *
      * @exception BuildException if the version information is unavailable
      */
     private static void printVersion(final int logLevel) throws BuildException {
@@ -1208,7 +1355,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     /**
      * Prints the description of a project (if there is one) to
      * <code>System.out</code>.
-     * 
+     *
      * @param project The project to display a description of. Must not be
      *            <code>null</code>.
      */
@@ -1222,7 +1369,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
      * Targets in imported files with a project name and not overloaded by the
      * main build file will be in the target map twice. This method removes the
      * duplicate target.
-     * 
+     *
      * @param targets the targets to filter.
      * @return the filtered targets.
      */
@@ -1251,7 +1398,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     /**
      * Prints a list of all targets in the specified project to
      * <code>System.out</code>, optionally including subtargets.
-     * 
+     *
      * @param project The project to display a description of. Must not be
      *            <code>null</code>.
      * @param printSubTargets Whether or not subtarget names should also be
@@ -1319,10 +1466,10 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     /**
      * Searches for the correct place to insert a name into a list so as to keep
      * the list sorted alphabetically.
-     * 
+     *
      * @param names The current list of names. Must not be <code>null</code>.
      * @param name The name to find a place for. Must not be <code>null</code>.
-     * 
+     *
      * @return the correct place in the list for the given name
      */
     private static int findTargetPosition(final Vector<String> names, final String name) {
@@ -1339,15 +1486,15 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
     /**
      * Writes a formatted list of target names to <code>System.out</code> with
      * an optional description.
-     * 
-     * 
+     *
+     *
      * @param project the project instance.
      * @param names The names to be printed. Must not be <code>null</code>.
      * @param descriptions The associated target descriptions. May be
      *            <code>null</code>, in which case no descriptions are
      *            displayed. If non-<code>null</code>, this should have as many
      *            elements as <code>names</code>.
-     * @param topDependencies The list of dependencies for each target. The
+     * @param dependencies The list of dependencies for each target. The
      *            dependencies are listed as a non null enumeration of String.
      * @param heading The heading to display. Should not be <code>null</code>.
      * @param maxlen The maximum length of the names of the targets. If
@@ -1366,7 +1513,7 @@ public class Main extends org.apache.tools.ant.Main implements AntMain {
             spaces += spaces;
         }
         final StringBuilder msg = new StringBuilder();
-        msg.append(heading + lSep + lSep);
+        msg.append(heading).append(lSep).append(lSep);
         final int size = names.size();
         for (int i = 0; i < size; i++) {
             msg.append(" ");

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- This file is part of the DITA Open Toolkit project.
-     See the accompanying license.txt file for applicable licenses. -->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2012 Jarno Elovirta
+
+See the accompanying LICENSE file for applicable license.
+-->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:xs="http://www.w3.org/2001/XMLSchema"
                 xmlns:fo="http://www.w3.org/1999/XSL/Format"
@@ -103,8 +108,7 @@
   <xsl:template match="*" mode="ditamsg:no-glossentry-for-abbreviated-form">
     <xsl:param name="keys"/>
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">060</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX060W'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="$keys"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>

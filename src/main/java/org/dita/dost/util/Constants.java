@@ -1,10 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
-
-/*
- * (c) Copyright IBM Corp. 2005, 2006 All Rights Reserved.
+ *
+ * Copyright 2005, 2006 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.util;
 
@@ -603,6 +602,7 @@ public final class Constants {
     public static final String ELEMENT_NAME_MAPLINKS = "maplinks";
     /**prop element.*/
     public static final String ELEMENT_NAME_PROP = "prop";
+    public static final String ELEMENT_NAME_REVPROP = "revprop";
     /**map element.*/
     public static final String ELEMENT_NAME_ACTION = "action";
     /**action element.*/
@@ -618,11 +618,15 @@ public final class Constants {
     public static final String ATTRIBUTE_NAME_MAPREF = "mapref";
     /**navtitle attribute.*/
     public static final String ATTRIBUTE_NAME_NAVTITLE = "navtitle";
+    /**locktitle attribute.*/
+    public static final String ATTRIBUTE_NAME_LOCKTITLE = "locktitle";
+    /**locktitle="yes" value.*/
+    public static final String ATTRIBUTE_NAME_LOCKTITLE_VALUE_YES = "yes";
     /**format attribute.*/
     public static final String ATTRIBUTE_NAME_FORMAT = "format";
     /**charset attribute.*/
     public static final String ATTRIBUTE_NAME_CHARSET = "charset";
-    /**charset attribute.*/
+    /**lang attribute.*/
     public static final String ATTRIBUTE_NAME_LANG = "lang";
     /**att attribute.*/
     public static final String ATTRIBUTE_NAME_ATT = "att";
@@ -654,7 +658,9 @@ public final class Constants {
     public static final String ATTRIBUTE_NAME_PRODUCT = "product";
     /**otherprops attribute.*/
     public static final String ATTRIBUTE_NAME_OTHERPROPS = "otherprops";
+    public static final String ATTRIBUTE_NAME_OUTPUTCLASS = "outputclass";
     /**scope attribute.*/
+    public static final String ATTRIBUTE_NAME_REV = "rev";
     public static final String ATTRIBUTE_NAME_SCOPE = "scope";
     /**type attribute.*/
     public static final String ATTRIBUTE_NAME_TYPE = "type";
@@ -670,6 +676,8 @@ public final class Constants {
     public static final String ATTRIBUTE_NAME_CLASSID = "classid";
     /**imageref attribute.*/
     public static final String ATTRIBUTE_NAME_IMAGEREF = "imageref";
+    /**generated imagerefuri attribute.*/
+    public static final String ATTRIBUTE_NAME_IMAGEREF_URI = "imagerefuri";
     /**start attribute.*/
     public static final String ATTRIBUTE_NAME_START="start";
     /**conref attribute.*/
@@ -704,6 +712,10 @@ public final class Constants {
     public static final String ATTRIBUTE_NAME_COLS = "cols";
     public static final String ATTRIBUTE_NAME_VALUE = "value";
     public static final String ATTRIBUTE_NAME_VALUETYPE = "valuetype";
+    public static final String ATTRIBUTE_NAME_COLOR = "color";
+    public static final String ATTRIBUTE_NAME_BACKCOLOR = "backcolor";
+    public static final String ATTRIBUTE_NAME_STYLE = "style";
+    public static final String ATTRIBUTE_NAME_CHANGEBAR = "changebar";
 
     public static final String ATTRIBUTE_VALUETYPE_VALUE_REF = "ref";
 
@@ -717,8 +729,6 @@ public final class Constants {
     /** Windows path separator. */
     public static final String WINDOWS_SEPARATOR = "\\";
 
-    /** Constants for index type(javahelp).*/
-    public static final String INDEX_TYPE_JAVAHELP = "javahelp";
     /** Constants for index type(htmlhelp).*/
     public static final String INDEX_TYPE_HTMLHELP = "htmlhelp";
     /** Constants for index type(eclipsehelp).*/
@@ -730,8 +740,6 @@ public final class Constants {
     public static final String TRANS_TYPE_XHTML = "xhtml";
     /** Constants for transform type(eclipsehelp).*/
     public static final String TRANS_TYPE_ECLIPSEHELP = "eclipsehelp";
-    /** Constants for transform type(javahelp).*/
-    public static final String TRANS_TYPE_JAVAHELP = "javahelp";
     /** Constants for transform type(htmlhelp).*/
     public static final String TRANS_TYPE_HTMLHELP = "htmlhelp";
     /** Constants for transform type(eclipsecontent).*/
@@ -742,6 +750,8 @@ public final class Constants {
     //store the scheme files refered by a scheme file in the form of Map<String Set<String>>
     /** Constant for generated property file name(subrelation.xml).*/
     public static final String FILE_NAME_SUBJECT_RELATION = "subrelation.xml";
+    /** Constant for generated DITAVAL file name(ditaot.generated.ditaval).*/
+    public static final String FILE_NAME_MERGED_DITAVAL = "ditaot.generated.ditaval";
 
     /** Property name for input file system path. Deprecated since 2.2 */
     @Deprecated
@@ -753,7 +763,8 @@ public final class Constants {
     @Deprecated
     public static final String INPUT_DIR = "user.input.dir";
     public static final String INPUT_DIR_URI = "user.input.dir.uri";
-    /** Property name for copy-to target2sourcemap list file */
+    /** Property name for copy-to target2sourcemap list file. Deprecated since 2.3 */
+    @Deprecated
     public static final String COPYTO_TARGET_TO_SOURCE_MAP_LIST = "copytotarget2sourcemaplist";
     /** Property name for relflag image list file */
     public static final String REL_FLAGIMAGE_LIST="relflagimagelist";
@@ -766,6 +777,8 @@ public final class Constants {
     public static final String ANT_INVOKER_PARAM_INPUTMAP = "inputmap";
     /**Constants for common params used in ant invoker(ditaval).*/
     public static final String ANT_INVOKER_PARAM_DITAVAL = "ditaval";
+    /**Constants for common params used in ant invoker(mergedditaval)*/
+    public static final String ANT_INVOKER_PARAM_MERGEDDITAVAL = "mergedditaval";
     /**Constants for common params used in ant invoker(maplinks).*/
     public static final String ANT_INVOKER_PARAM_MAPLINKS = "maplinks";
     /** Argument name for enabling profiling. */
@@ -815,9 +828,8 @@ public final class Constants {
     /**OS relevant constants(windows).*/
     public static final String OS_NAME_WINDOWS = "windows";
 
-    /**
-     * Misc string constants used in this toolkit.
-     */
+    //Misc string constants used in this toolkit.
+
     /**STRING_EMPTY.*/
     public static final String STRING_EMPTY = "";
     /**LEFT_BRACKET.*/
@@ -900,8 +912,12 @@ public final class Constants {
     /**ATTRIBUTE_PREFIX_DITAARCHVERSION.*/
     public static final String ATTRIBUTE_PREFIX_DITAARCHVERSION = "ditaarch";
     /**ATTRIBUTE_NAMESPACE_PREFIX_DITAARCHVERSION.*/
-    public static final String ATTRIBUTE_NAMESPACE_PREFIX_DITAARCHVERSION = XMLNS_ATTRIBUTE + ":ditaarch";
+    public static final String ATTRIBUTE_NAMESPACE_PREFIX_DITAARCHVERSION = XMLNS_ATTRIBUTE + ":" + ATTRIBUTE_PREFIX_DITAARCHVERSION;
     public static final String DITA_NAMESPACE = "http://dita.oasis-open.org/architecture/2005/";
+    public static final String DITA_OT_NS_PREFIX = "dita-ot";
+    public static final String DITA_OT_NAMESPACE = "http://dita-ot.sourceforge.net";
+    public static final String DITA_OT_NS = "http://dita-ot.sourceforge.net/ns/201007/dita-ot";
+
 
     /**ATTR_CLASS_VALUE_SUBJECT_SCHEME_BASE.*/
     public static final String ATTR_CLASS_VALUE_SUBJECT_SCHEME_BASE = " subjectScheme/";
@@ -940,13 +956,15 @@ public final class Constants {
     public static final String ATTRIBUTE_NAME_NAME = "name";
     /**type attribute value subjectScheme.*/
     public static final String ATTR_TYPE_VALUE_SUBJECT_SCHEME = "subjectScheme";
-    /**store how many scheme files a ditamap file used in form of Map<String, Set<String>>.*/
+    /**store how many scheme files a ditamap file used in form of {@code Map&lt;String, Set&lt;String>>}.*/
     public static final String FILE_NAME_SUBJECT_DICTIONARY = "subject_scheme.dictionary";
     /**export.xml to store exported elements.*/
     public static final String FILE_NAME_EXPORT_XML = "export.xml";
     /**pluginId.xml to store the plugin id.*/
     public static final String FILE_NAME_PLUGIN_XML = "pluginId.xml";
 
+    /** Application configuration filename. */
+    public static final String APP_CONF_PROPERTIES = "application.properties";
     /** Configuration filename. */
     public static final String CONF_PROPERTIES = "configuration.properties";
     /** Generated configuration filename. */
@@ -961,14 +979,23 @@ public final class Constants {
     public static final String CONF_SUPPORTED_RESOURCE_EXTENSIONS = "supported_resource_extensions";
     /** Property name for print transtypes. */
     public static final String CONF_PRINT_TRANSTYPES = "print_transtypes";
+    public static final String CONF_TRANSTYPES = "transtypes";
     /** Property name for template files. */
     public static final String CONF_TEMPLATES = "templates";
+    /** Plugin configuration file name. */
+    public static final String PLUGIN_CONF = "plugins.xml";
 
     /** Project reference name for job configuration object. */
     public static final String ANT_REFERENCE_JOB = "job";
-
+    /** Temporary directory Ant property name. */
+    public static final String ANT_TEMP_DIR = "dita.temp.dir";
+    /** Deprecated since 2.3 */
+    @Deprecated
     public static final String PI_PATH2PROJ_TARGET = "path2project";
     public static final String PI_PATH2PROJ_TARGET_URI = "path2project-uri";
+    public static final String PI_PATH2ROOTMAP_TARGET_URI = "path2rootmap-uri";
+    /** Deprecated since 2.3 */
+    @Deprecated
     public static final String PI_WORKDIR_TARGET = "workdir";
     public static final String PI_WORKDIR_TARGET_URI = "workdir-uri";
 

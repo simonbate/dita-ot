@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2004, 2005 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2004, 2005 All Rights Reserved.
  */
 package org.dita.dost.pipeline;
 
@@ -12,7 +12,10 @@ import java.util.Map;
 
 /**
  * Pipeline flow information for module input.
+ *
+ * @deprecated use {@link java.util.Map} instead. Deprecated since 2.3
  */
+@Deprecated
 public interface AbstractPipelineInput {
 
     /**

@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 This file is part of the DITA Open Toolkit project.
-See the accompanying license.txt file for applicable licenses.
+
+Copyright 2012 Eero Helenius
+
+See the accompanying LICENSE file for applicable license.
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:xs="http://www.w3.org/2001/XMLSchema"
@@ -54,6 +57,12 @@ See the accompanying license.txt file for applicable licenses.
       <xsl:apply-templates/>
     </fo:block>
   </xsl:template>
+  
+  <xsl:template match="*[contains(@class, ' reference/properties ')]
+    [empty(*[contains(@class,' reference/property ')]/
+           *[contains(@class,' reference/proptype ') or contains(@class,' reference/propvalue ') or contains(@class,' reference/propdesc ')])]" priority="10"/>
+  <xsl:template match="*[contains(@class, ' reference/property ')]
+    [empty(*[contains(@class,' reference/proptype ') or contains(@class,' reference/propvalue ') or contains(@class,' reference/propdesc ')])]" priority="10"/>
 
   <xsl:template match="*[contains(@class, ' reference/properties ')]">
     <fo:table xsl:use-attribute-sets="properties">

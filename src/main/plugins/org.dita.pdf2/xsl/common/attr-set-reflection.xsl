@@ -27,8 +27,8 @@ These terms and conditions supersede the terms and conditions in any
 licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
-This file is part of the DITA Open Toolkit project hosted on Sourceforge.net. 
-See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project.
+See the accompanying LICENSE file for applicable license.
 -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -339,8 +339,7 @@ list just like regular named attribute sets.
             </xsl:attribute>
             <xsl:for-each select="xsl:*">
               <xsl:call-template name="output-message">
-                <xsl:with-param name="msgnum">009</xsl:with-param>
-                <xsl:with-param name="msgsev">E</xsl:with-param>
+                <xsl:with-param name="id" select="'PDFX009E'"/>
                 <xsl:with-param name="msgparams">%1=<xsl:value-of select="name()"/></xsl:with-param>
               </xsl:call-template>
             </xsl:for-each>

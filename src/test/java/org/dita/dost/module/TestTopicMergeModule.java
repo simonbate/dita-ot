@@ -1,21 +1,21 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
-
-/*
- * (c) Copyright IBM Corp. 2010 All Rights Reserved.
+ *
+ * Copyright 2010 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.module;
 
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
+import static org.dita.dost.TestUtils.assertXMLEqual;
+import static org.dita.dost.util.Constants.INPUT_DITAMAP_URI;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.net.URI;
 
-import org.custommonkey.xmlunit.XMLUnit;
 import org.dita.dost.TestUtils;
 import org.dita.dost.exception.DITAOTException;
 import org.dita.dost.module.TopicMergeModule;
@@ -44,9 +44,6 @@ public class TestTopicMergeModule {
 
     @Before
     public void setUp() throws IOException {
-        TestUtils.resetXMLUnit();
-        XMLUnit.setIgnoreWhitespace(true);
-        
         tempDir = TestUtils.createTempDir(getClass());
 
         //		facade = new PipelineFacade();
@@ -84,7 +81,9 @@ public class TestTopicMergeModule {
     {
         final TopicMergeModule topicmergemodule = new TopicMergeModule();
         topicmergemodule.setLogger(new TestUtils.TestLogger());
-        topicmergemodule.setJob(new Job(temporaryDir));
+        final Job job = new Job(temporaryDir);
+        job.setInputMap(URI.create("test.ditamap"));
+        topicmergemodule.setJob(job);
         topicmergemodule.execute(pipelineInput);
         
         assertXMLEqual(new InputSource(ditalistfile.toURI().toString()),

@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  This file is part of the DITA Open Toolkit project.
-  See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2011 Jarno Elovirta
+
+See the accompanying LICENSE file for applicable license.
 -->
 <plugin id="org.dita.xhtml">
   <!-- extension points -->
@@ -17,13 +20,9 @@
       <val>yes</val>
       <val default="true">no</val>
     </param>
-    <param name="args.breadcrumbs" desc="Specifies whether to generate breadcrumb links." type="enum">
+    <param name="args.copycss" desc="Specifies whether to copy the custom .css file to the output directory." type="enum">
       <val>yes</val>
       <val default="true">no</val>
-    </param>
-    <param name="args.copycss" desc="Specifies whether to copy the custom .css file to the output directory." type="enum">
-      <val default="true">yes</val>
-      <val>no</val>
     </param>
     <param name="args.css" desc="Specifies the name of a custom .css file." type="file"/>
     <param name="args.csspath" desc="Specifies the location of a copied .css file relative to the output directory." type="file"/>
@@ -54,7 +53,7 @@
     </param>
     <param name="args.xsl" desc="Specifies a custom XSL file to be used instead of the default XSL transformation." type="file"/>
   </transtype>
-  <transtype name="common-html" extends="base-html" desc="HTML5 and XHTML">
+  <transtype name="xhtml" extends="base-html" desc="XHTML">
     <param name="args.xhtml.contenttarget" desc="Specifies the value of the @target attribute on the &lt;base&gt; element in the TOC file." type="string">
       <val default="true">contentwin</val>
     </param>
@@ -64,8 +63,8 @@
     <param name="args.xhtml.toc.class" desc="Specifies the value of the @class attribute on the &lt;body&gt; element in the TOC file." type="string"/>
     <param name="args.xhtml.toc.xsl" desc="Specifies a custom XSL file to be used for TOC generation." type="file"/>
   </transtype>
-  <transtype name="xhtml" extends="common-html" desc="XHTML"/>
-  <feature extension="dita.conductor.target.relative" file="conductor.xml"/>
+  <feature extension="ant.import" file="build_general.xml"/>
+  <feature extension="ant.import" file="build_dita2xhtml.xml"/>
   <feature extension="dita.xsl.messages" file="resource/messages.xml"/>
   <template file="build_general_template.xml"/>
   <template file="build_dita2xhtml_template.xml"/>

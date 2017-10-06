@@ -1,3 +1,10 @@
+/*
+ * This file is part of the DITA Open Toolkit project.
+ *
+ * Copyright 2013 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
+ */
 package org.dita.dost.util;
 
 import static org.junit.Assert.*;
@@ -6,6 +13,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.apache.tools.ant.Project;
+import org.dita.dost.ant.UriDirnameTask;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -1,10 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
-
-/*
- * (c) Copyright IBM Corp. 2010 All Rights Reserved.
+ *
+ * Copyright 2010 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.util;
 
@@ -69,18 +68,6 @@ public class TestFileUtils {
         assertEquals("a.dita", FileUtils.getRelativeUnixPath("c:\\map1\\map2\\map.ditamap", "c:\\map1\\map2\\a.dita"));
         assertEquals("../topic/a.dita",FileUtils.getRelativeUnixPath("c:/map1/map.ditamap", "c:/topic/a.dita"));
         assertEquals("../topic/a.dita",FileUtils.getRelativeUnixPath("c:\\map1\\map.ditamap", "c:\\topic\\a.dita"));
-    }
-    
-    @Test
-    public void testGetRelativePathFromMapFileString() {
-        assertEquals("../a.dita",FileUtils.getRelativeUnixPath(new File("c:/map/map.ditamap"), "c:/a.dita"));
-        assertEquals("../a.dita",FileUtils.getRelativeUnixPath(new File("c:\\map\\map.ditamap"), "c:\\a.dita"));
-        assertEquals("d:/a.dita",FileUtils.getRelativeUnixPath(new File("c:/map.ditamap"), "d:/a.dita"));
-        assertEquals("d:\\a.dita",FileUtils.getRelativeUnixPath(new File("c:\\map.ditamap"), "d:\\a.dita"));
-        assertEquals("a.dita", FileUtils.getRelativeUnixPath(new File("c:/map1/map2/map.ditamap"), "c:/map1/map2/a.dita"));
-        assertEquals("a.dita", FileUtils.getRelativeUnixPath(new File("c:\\map1\\map2\\map.ditamap"), "c:\\map1\\map2\\a.dita"));
-        assertEquals("../topic/a.dita",FileUtils.getRelativeUnixPath(new File("c:/map1/map.ditamap"), "c:/topic/a.dita"));
-        assertEquals("../topic/a.dita",FileUtils.getRelativeUnixPath(new File("c:\\map1\\map.ditamap"), "c:\\topic\\a.dita"));
     }
     
     @Test
@@ -276,60 +263,6 @@ public class TestFileUtils {
         assertEquals("foo", FileUtils.setFragment("foo#", null));
         assertEquals("foo", FileUtils.setFragment("foo", null));
         assertEquals("", FileUtils.setFragment("#bar", null));
-    }
-    
-    @Test
-    public void testGetTopicId() {
-        assertEquals("bar", FileUtils.getTopicID("foo#bar/baz"));
-        assertEquals("bar", FileUtils.getTopicID("foo#bar"));
-        assertNull(FileUtils.getTopicID("foo#"));
-        assertNull(FileUtils.getTopicID("foo"));
-        assertEquals("bar", FileUtils.getTopicID("#bar/baz"));
-        assertEquals("bar", FileUtils.getTopicID("#bar"));
-        assertNull(FileUtils.getTopicID(""));
-        try {
-            assertNull(FileUtils.getTopicID(null));
-            fail();
-        } catch (final NullPointerException e) {}
-    }
-    
-    @Test
-    public void testGetElementId() {
-        assertEquals("baz", FileUtils.getElementID("foo#bar/baz"));
-        assertNull(FileUtils.getElementID("foo#bar"));
-        assertNull(FileUtils.getElementID("foo#"));
-        assertNull(FileUtils.getElementID("foo"));
-        assertEquals("baz", FileUtils.getElementID("#bar/baz"));
-        assertNull(FileUtils.getElementID("#bar"));
-        assertNull(FileUtils.getElementID(""));
-        try {
-            assertNull(FileUtils.getElementID(null));
-            fail();
-        } catch (final NullPointerException e) {}
-    }
-    
-    @Test
-    public void testSetElementId() {
-        assertEquals("foo#bar/qux", FileUtils.setElementID("foo#bar/baz", "qux"));
-        assertEquals("foo#bar/qux", FileUtils.setElementID("foo#bar", "qux"));
-        try {
-            FileUtils.setElementID("foo#", "qux");
-            fail();
-        } catch (final IllegalArgumentException e) {}
-        try {
-            FileUtils.setElementID("foo", "qux");
-            fail();
-        } catch (final IllegalArgumentException e) {}
-        
-        assertEquals("foo#bar", FileUtils.setElementID("foo#bar/baz", null));
-        assertEquals("foo#bar", FileUtils.setElementID("foo#bar", null));
-        assertEquals("foo", FileUtils.setElementID("foo#", null));
-        assertEquals("foo", FileUtils.setElementID("foo", null));
-        
-        try {
-            FileUtils.setElementID(null, null);
-            fail();
-        } catch (final NullPointerException e) {}
     }
     
     @Test

@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005 All Rights Reserved.
  */
 package org.dita.dost.index;
 
@@ -17,14 +17,11 @@ import java.util.List;
 import java.util.Locale;
 
 import org.dita.dost.exception.DITAOTException;
-import org.dita.dost.log.DITAOTJavaLogger;
+import org.dita.dost.log.DITAOTLogger;
 import org.dita.dost.pipeline.PipelineHashIO;
 import org.dita.dost.writer.AbstractExtendDitaWriter;
 import org.dita.dost.writer.AbstractWriter;
-import org.dita.dost.writer.CHMIndexWriter;
-import org.dita.dost.writer.EclipseIndexWriter;
 import org.dita.dost.writer.IDitaTranstypeIndexWriter;
-import org.dita.dost.writer.JavaHelpIndexWriter;
 
 /**
  * This class is a collection of index term.
@@ -48,35 +45,17 @@ public final class IndexTermCollection {
     /** The output file name of index term without extension. */
     private String outputFileRoot = null;
     /** The logger. */
-    private final DITAOTJavaLogger javaLogger;
+    private DITAOTLogger javaLogger;
 
     //RFE 2987769 Eclipse index-see
     /* Parameters passed in from ANT module */
     private PipelineHashIO pipelineHashIO = null;
 
-    /**
-     * Private constructor used to forbid instance.
-     */
-    private IndexTermCollection() {
-        javaLogger = new DITAOTJavaLogger();
+    public IndexTermCollection() {
     }
 
-    /**
-     * The only interface to access IndexTermCollection instance.
-     * @return Singleton IndexTermCollection instance
-     */
-    public static synchronized IndexTermCollection getInstantce(){
-        if(collection == null){
-            collection = new IndexTermCollection();
-        }
-        return collection;
-    }
-
-    /**
-     * The interface to clear the result in IndexTermCollection instance.
-     */
-    public void clear(){
-        termList.clear();
+    public void setLogger(final DITAOTLogger logger) {
+        this.javaLogger = logger;
     }
 
     /**
@@ -154,7 +133,6 @@ public final class IndexTermCollection {
      * Sort term list extracted from dita files base on Locale.
      */
     public void sort() {
-        final int termListSize = termList.size();
         if (IndexTerm.getTermLocale() == null ||
                 IndexTerm.getTermLocale().getLanguage().trim().length()==0) {
             IndexTerm.setTermLocale(new Locale(LANGUAGE_EN,
@@ -179,7 +157,6 @@ public final class IndexTermCollection {
     public void outputTerms() throws DITAOTException {
         StringBuilder buff = new StringBuilder(outputFileRoot);
         AbstractWriter abstractWriter = null;
-        IDitaTranstypeIndexWriter indexWriter = null;
 
         if (indexClass != null && indexClass.length() > 0) {
             //Instantiate the class value
@@ -187,7 +164,7 @@ public final class IndexTermCollection {
             try {
                 anIndexClass = Class.forName( indexClass );
                 abstractWriter = (AbstractWriter) anIndexClass.newInstance();
-                indexWriter = (IDitaTranstypeIndexWriter)anIndexClass.newInstance();
+                final IDitaTranstypeIndexWriter indexWriter = (IDitaTranstypeIndexWriter) anIndexClass.newInstance();
 
                 //RFE 2987769 Eclipse index-see
                 try{
@@ -210,40 +187,15 @@ public final class IndexTermCollection {
             }
 
 
-        }
-        //Fallback to the old way of doing things.
-        else {
-
-            if (INDEX_TYPE_HTMLHELP.equalsIgnoreCase(indexType)) {
-                abstractWriter = new CHMIndexWriter();
-                buff.append(".hhk");
-            } else if (INDEX_TYPE_JAVAHELP
-                    .equalsIgnoreCase(indexType)) {
-                abstractWriter = new JavaHelpIndexWriter();
-                buff.append("_index.xml");
-            } else if (INDEX_TYPE_ECLIPSEHELP
-                    .equalsIgnoreCase(indexType)) {
-                abstractWriter = new EclipseIndexWriter();
-                // We need to get rid of the ditamap or topic name in the URL
-                // so we can create index.xml file for Eclipse plug-ins.
-                // int filepath = buff.lastIndexOf("\\");
-                final File indexDir = new File(buff.toString()).getParentFile();
-                // buff.delete(filepath, buff.length());
-                ((EclipseIndexWriter) abstractWriter).setFilePath(indexDir
-                        .getAbsolutePath());
-                // buff.insert(filepath, "\\index.xml");
-                buff = new StringBuilder(new File(indexDir, "index.xml")
-                .getAbsolutePath());
-            }
+        } else {
+            throw new IllegalArgumentException("Index writer class not defined");
         }
 
-        //if (!getTermList().isEmpty()){
         //Even if there is no term in the list create an empty index file
         //otherwise the compiler will report error.
         abstractWriter.setLogger(javaLogger);
         ((IDitaTranstypeIndexWriter) abstractWriter).setTermList(this.getTermList());
         abstractWriter.write(new File(buff.toString()));
-        //}
     }
 
     /**

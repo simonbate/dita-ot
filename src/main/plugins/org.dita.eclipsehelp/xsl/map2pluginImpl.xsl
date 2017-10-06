@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- This file is part of the DITA Open Toolkit project hosted on 
-     Sourceforge.net. See the accompanying license.txt file for 
-     applicable licenses.-->
-<!-- (c) Copyright IBM Corp. 2006 All Rights Reserved. -->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2006 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0">
   
+  <xsl:import href="plugin:org.dita.base:xsl/common/dita-utilities.xsl"/>
   <xsl:import href="plugin:org.dita.base:xsl/common/output-message.xsl"/>
   
   <xsl:param name="version">0.0.0</xsl:param>
@@ -23,6 +27,7 @@
 
   
   <!-- Define the error message prefix identifier -->
+  <!-- Deprecated since 2.3 -->
   <xsl:variable name="msgprefix">DOTX</xsl:variable>
   
   <xsl:template match="/"> 
@@ -85,8 +90,7 @@
           <xsl:otherwise>
             <xsl:text>org.sample.help.doc</xsl:text>
             <xsl:call-template name="output-message">
-              <xsl:with-param name="msgnum">050</xsl:with-param>
-              <xsl:with-param name="msgsev">W</xsl:with-param>
+              <xsl:with-param name="id" select="'DOTX050W'"/>
             </xsl:call-template>
           </xsl:otherwise>
         </xsl:choose>
@@ -148,8 +152,7 @@
           <xsl:otherwise>
             <xsl:text>org.sample.help.doc</xsl:text>
             <xsl:call-template name="output-message">
-              <xsl:with-param name="msgnum">050</xsl:with-param>
-              <xsl:with-param name="msgsev">W</xsl:with-param>
+              <xsl:with-param name="id" select="'DOTX050W'"/>
             </xsl:call-template>
           </xsl:otherwise>
         </xsl:choose>
@@ -230,8 +233,7 @@
           <xsl:attribute name="plugin-id">org.sample.help.doc</xsl:attribute>
           <xsl:attribute name="id">org.sample.help.doc.sample.lang</xsl:attribute>
           <xsl:call-template name="output-message">
-            <xsl:with-param name="msgnum">050</xsl:with-param>
-            <xsl:with-param name="msgsev">W</xsl:with-param>
+            <xsl:with-param name="id" select="'DOTX050W'"/>
           </xsl:call-template>
         </xsl:otherwise>
       </xsl:choose>
@@ -294,8 +296,7 @@
           <xsl:otherwise>
             <xsl:text>Bundle-SymbolicName: org.sample.help.doc; singleton:=true</xsl:text><xsl:value-of select="$newline"/>
             <xsl:call-template name="output-message">
-              <xsl:with-param name="msgnum">050</xsl:with-param>
-              <xsl:with-param name="msgsev">W</xsl:with-param>
+              <xsl:with-param name="id" select="'DOTX050W'"/>
             </xsl:call-template>
           </xsl:otherwise>
         </xsl:choose> 
@@ -341,8 +342,7 @@
             <xsl:value-of select="$newline"/>
             <xsl:text>Fragment-Host: org.sample.help.doc;</xsl:text><xsl:value-of select="$newline"/>
             <xsl:call-template name="output-message">
-              <xsl:with-param name="msgnum">050</xsl:with-param>
-              <xsl:with-param name="msgsev">W</xsl:with-param>
+              <xsl:with-param name="id" select="'DOTX050W'"/>
             </xsl:call-template>
           </xsl:otherwise>
         </xsl:choose>                 

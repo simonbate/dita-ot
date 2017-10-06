@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- This file is part of the DITA Open Toolkit project hosted on 
-     Sourceforge.net. See the accompanying license.txt file for 
-     applicable licenses.-->
-<!-- (c) Copyright IBM Corp. 2004, 2005 All Rights Reserved. -->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2004, 2005 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 <!-- 20090904 RDA: Add support for stepsection; combine duplicated logic
                    for main steps and steps-unordered templates. -->
 
@@ -312,6 +315,8 @@
   </xsl:template>
 
 <!-- nested steps - 1 level of nesting only -->
+  <xsl:template match="*[contains(@class, ' task/substeps ')][empty(*[contains(@class,' task/substep ')])]" priority="10"/>
+  
 <xsl:template match="*[contains(@class,' task/substeps ')]" name="topic.task.substeps">
  <!-- If there's a block element somewhere in the step list, expand the whole list -->
   <xsl:variable name="sub_step_expand"> <!-- set & save sub_step_expand=yes/no for expanding/compacting list items -->
@@ -350,6 +355,8 @@
 </xsl:template>
 
 <!-- choices contain choice items -->
+  <xsl:template match="*[contains(@class, ' task/choices ')][empty(*[contains(@class,' task/choice ')])]" priority="10"/>
+  
 <xsl:template match="*[contains(@class,' task/choices ')]" name="topic.task.choices">
   <xsl:apply-templates select="*[contains(@class,' ditaot-d/ditaval-startprop ')]" mode="out-of-line"/>
   <xsl:call-template name="setaname"/>
@@ -699,9 +706,8 @@
   <xsl:param name="use-label"/>
   <xsl:if test="$GENERATE-TASK-LABELS='YES'">
     <xsl:variable name="headLevel">
-      <xsl:variable name="headCount">
-        <xsl:value-of select="count(ancestor::*[contains(@class,' topic/topic ')])+1"/>
-      </xsl:variable>
+      <xsl:variable name="headCount" select="count(ancestor::*[contains(@class,' topic/topic ')]) + 1"
+        as="xs:integer"/>
       <xsl:choose>
         <xsl:when test="$headCount > 6">h6</xsl:when>
         <xsl:otherwise>h<xsl:value-of select="$headCount"/></xsl:otherwise>
@@ -732,7 +738,7 @@
   
   <!-- Task wrapper for HTML: "Related tasks" in <div>. -->
   <xsl:template match="*[contains(@class, ' topic/link ')][@type='task']" mode="related-links:result-group"
-                name="related-links:result.task" as="element(linklist)">
+                name="related-links:result.task" as="element()?">
     <xsl:param name="links" as="node()*"/>
     <xsl:if test="normalize-space(string-join($links, ''))">
       <linklist class="- topic/linklist " outputclass="relinfo reltasks">

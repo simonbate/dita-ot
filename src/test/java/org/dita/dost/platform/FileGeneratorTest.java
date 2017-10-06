@@ -1,14 +1,17 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2011 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.platform;
 
 import static org.apache.commons.io.FileUtils.*;
+import static org.dita.dost.TestUtils.assertXMLEqual;
 import static org.dita.dost.platform.PluginParser.FEATURE_ELEM;
 import static org.junit.Assert.assertEquals;
 import static java.util.Arrays.*;
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 import static org.dita.dost.util.XMLUtils.*;
 import static javax.xml.XMLConstants.NULL_NS_URI;
 
@@ -76,7 +79,6 @@ public class FileGeneratorTest {
         tempDir = TestUtils.createTempDir(getClass());
         tempFile = new File(tempDir, "dummy_template.xml");
         copyFile(new File(resourceDir, "src" + File.separator + "dummy_template.xml"), tempFile);
-        TestUtils.resetXMLUnit();
     }
 
     @Test

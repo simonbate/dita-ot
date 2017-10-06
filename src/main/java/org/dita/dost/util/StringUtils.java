@@ -1,24 +1,21 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2004, 2005 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2004, 2005 All Rights Reserved.
  */
 package org.dita.dost.util;
 
+import javax.xml.namespace.QName;
+
+import static java.util.Arrays.asList;
 import static org.dita.dost.util.Constants.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * String relevant utilities.
@@ -121,22 +118,21 @@ public final class StringUtils {
      * @param domains input domain
      * @return list of {@code props} attribute specializations
      */
-    public static String[][] getExtProps(final String domains){
-        final List<String[]> propsBuffer = new ArrayList<>();
+    public static QName[][] getExtProps(final String domains){
+        // FIXME Dont' mix arrays and collections
+        final List<QName[]> propsBuffer = new ArrayList<>();
         int propsStart = domains.indexOf("a(" + ATTRIBUTE_NAME_PROPS);
         int propsEnd = domains.indexOf(")",propsStart);
         while (propsStart != -1 && propsEnd != -1){
-            final String propPath = domains.substring(propsStart+2,propsEnd).trim();
-            final StringTokenizer propPathTokenizer = new StringTokenizer(propPath, STRING_BLANK);
-            final List<String> propList = new ArrayList<>(128);
-            while(propPathTokenizer.hasMoreTokens()){
-                propList.add(propPathTokenizer.nextToken());
-            }
-            propsBuffer.add(propList.toArray(new String[propList.size()]));
+            final String propPath = domains.substring(propsStart + 2, propsEnd).trim();
+            final List<QName> propList = Stream.of(propPath.split("\\s+"))
+                    .map(QName::valueOf)
+                    .collect(Collectors.toList());
+            propsBuffer.add(propList.toArray(new QName[propList.size()]));
             propsStart = domains.indexOf("a(" + ATTRIBUTE_NAME_PROPS, propsEnd);
             propsEnd = domains.indexOf(")",propsStart);
         }
-        return propsBuffer.toArray(new String[propsBuffer.size()][]);
+        return propsBuffer.toArray(new QName[propsBuffer.size()][]);
     }
 
     /**
@@ -278,7 +274,66 @@ public final class StringUtils {
 
         return aLocale;
     }
-    
+
+    /**
+     * Escape regular expression special characters.
+     *
+     * @param value input
+     * @return input with regular expression special characters escaped
+     */
+    public static String escapeRegExp(final String value) {
+        final StringBuilder buff = new StringBuilder();
+        if (value == null || value.length() == 0) {
+            return "";
+        }
+        int index = 0;
+        // $( )+.[^{\
+        while (index < value.length()) {
+            final char current = value.charAt(index);
+            switch (current) {
+            case '.':
+                buff.append("\\.");
+                break;
+                // case '/':
+                // case '|':
+            case '\\':
+                buff.append("[\\\\|/]");
+                break;
+            case '(':
+                buff.append("\\(");
+                break;
+            case ')':
+                buff.append("\\)");
+                break;
+            case '[':
+                buff.append("\\[");
+                break;
+            case ']':
+                buff.append("\\]");
+                break;
+            case '{':
+                buff.append("\\{");
+                break;
+            case '}':
+                buff.append("\\}");
+                break;
+            case '^':
+                buff.append("\\^");
+                break;
+            case '+':
+                buff.append("\\+");
+                break;
+            case '$':
+                buff.append("\\$");
+                break;
+            default:
+                buff.append(current);
+            }
+            index++;
+        }
+        return buff.toString();
+    }
+
     /** Whitespace normalization state. */
     private enum WhiteSpaceState { WORD, SPACE }
 
@@ -302,6 +357,20 @@ public final class StringUtils {
                 currentState = WhiteSpaceState.WORD;
             }
         }
+    }
+
+    /**
+     * Split string by whitespace.
+     *
+     * @param value string to split
+     * @return list of tokens
+     */
+    public static Collection<String> split(final String value) {
+        if (value == null) {
+            return Collections.emptyList();
+        }
+        final String[] tokens = value.trim().split("\\s+");
+        return asList(tokens);
     }
 
 }

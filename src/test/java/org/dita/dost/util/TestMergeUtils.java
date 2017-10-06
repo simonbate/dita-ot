@@ -1,10 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
-
-/*
- * (c) Copyright IBM Corp. 2010 All Rights Reserved.
+ *
+ * Copyright 2010 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.util;
 
@@ -99,9 +98,10 @@ public class TestMergeUtils {
 
     @Test
     public void testGetFirstTopicId() {
+        final MergeUtils mergeUtils = new MergeUtils();
         //assertEquals("task",mergeUtils.getFirstTopicId("stub.xml", "TEST_STUB"));
-        assertEquals("task", MergeUtils.getFirstTopicId(toURI("stub.xml"), srcDir.getAbsoluteFile(), false));
-        assertEquals("task", MergeUtils.getFirstTopicId(toURI("stub.xml"), srcDir.getAbsoluteFile(), true));
+        assertEquals("task", mergeUtils.getFirstTopicId(srcDir.toURI().resolve("stub.xml"), false));
+        assertEquals("task", mergeUtils.getFirstTopicId(srcDir.toURI().resolve("stub.xml"), true));
     }
 
 }

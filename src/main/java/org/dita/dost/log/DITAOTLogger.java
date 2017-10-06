@@ -1,52 +1,19 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2010 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2010 All Rights Reserved.
  */
 package org.dita.dost.log;
 
+import org.slf4j.Logger;
+
 /**
  * Common logging interface.
+ *
+ * <p>The original interface has been retrofitted to extend SLF4J Logger.</p>
  */
-public interface DITAOTLogger {
-
-    /**
-     * Log an information message.
-     * 
-     * @param msg message
-     */
-    void info(final String msg);
-
-    /**
-     * Log a warning message.
-     * 
-     * @param msg message
-     */
-    void warn(final String msg);
-
-    /**
-     * Log an error message.
-     * 
-     * @param msg message
-     */
-    void error(final String msg);
-
-    /**
-     * Log an error message with cause exception.
-     * 
-     * @param msg message
-     * @param t exception
-     */
-    void error(final String msg, final Throwable t);
-
-    /**
-     * Log a debug message.
-     * 
-     * @param msg message
-     */
-    void debug(final String msg);
-
+public interface DITAOTLogger extends Logger {
 }

@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- This file is part of the DITA Open Toolkit project hosted on 
-     Sourceforge.net. See the accompanying license.txt file for 
-     applicable licenses.-->
-<!-- (c) Copyright IBM Corp. 2006 All Rights Reserved. -->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2006 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 <project xmlns:dita="http://dita-ot.sourceforge.net" name="build_generaltargets">
 
   <target name="xhtml.init">
@@ -115,104 +118,77 @@
                    dita.topics.html.common,
                    dita.inner.topics.html.common"/>  
 
-  <target name="xhtml.image-metadata" depends="xhtml.image-metadata-check"
+  <target name="xhtml.image-metadata"
           unless="xhtml.image-metadata.skip"
           description="Read image metadata">
     <pipeline message="Read image metadata." taskname="image-metadata" tempdir="${dita.temp.dir}">
       <module class="org.dita.dost.module.ImageMetadataModule">
-        <param name="outputdir" location="${output.dir}"/>
+        <param name="outputdir" location="${dita.output.dir}"/>
       </module>
     </pipeline>
-  </target>
-  <target name="xhtml.image-metadata-check">
-    <condition property="xhtml.image-metadata.skip">
-      <isset property="noImagelist"/>
-    </condition>
   </target>
 
   <!--requirement 3, old solution-->
   
+  <macrodef name="topics.html">
+    <element name="params" optional="true" implicit="true"/>
+    <sequential>
+      <pipeline>
+      <xslt basedir="${dita.temp.dir}"
+        destdir="${dita.output.dir}"
+        reloadstylesheet="${dita.xhtml.reloadstylesheet}"
+        classpathref="dost.class.path"
+        extension="${out.ext}" style="${args.xsl}"
+        filenameparameter="FILENAME"
+        filedirparameter="FILEDIR">
+        <ditaFileset format="dita" processingRole="normal"/>
+        <param name="TRANSTYPE" expression="${transtype}" />
+        <param name="FILTERFILE" expression="${dita.input.valfile.url}"
+          if="dita.input.valfile" />
+        <param name="CSS" expression="${args.css.file}"
+          if="args.css.file" />
+        <param name="CSSPATH" expression="${user.csspath}"
+          if="user.csspath" />
+        <param name="HDF" expression="${args.hdf}" if="args.hdf" />
+        <param name="HDR" expression="${args.hdr}" if="args.hdr" />
+        <param name="FTR" expression="${args.ftr}" if="args.ftr" />
+        <param name="DRAFT" expression="${args.draft}" if="args.draft" />
+        <param name="ARTLBL" expression="${args.artlbl}" if="args.artlbl" />
+        <param name="GENERATE-TASK-LABELS" expression="${args.gen.task.lbl}" if="args.gen.task.lbl" />
+        <param name="PRESERVE-DITA-CLASS" expression="${args.xhtml.classattr}" if="args.xhtml.classattr"/>
+        <param name="NOPARENTLINK" expression="${args.hide.parent.link}" if="args.hide.parent.link"/>
+        <param name="include.rellinks" expression="${include.rellinks}"/>
+        <param name="INDEXSHOW" expression="${args.indexshow}" if="args.indexshow" />
+        <param name="genDefMeta" expression="${args.gen.default.meta}" if="args.gen.default.meta" />
+        <param name="OUTEXT" expression="${out.ext}" if="out.ext" />
+        <param name="BASEDIR" expression="${basedir}"/>
+        <param name="OUTPUTDIR" expression="${dita.output.dir}"/>
+        <param name="DBG" expression="${args.debug}" if="args.debug"/>
+        <param name="defaultLanguage" expression="${default.language}"/>
+        <params/>
+        <xmlcatalog refid="dita.catalog"/>
+      </xslt>
+      </pipeline>
+    </sequential>
+  </macrodef>
+  
   <target name="dita.topics.html.common" unless="noTopic" if="old.transform">
-    <xslt basedir="${dita.temp.dir}"
-      destdir="${output.dir}" includesfile="${dita.temp.dir}${file.separator}${fullditatopicfile}"
-      reloadstylesheet="${dita.xhtml.reloadstylesheet}"
-      classpathref="dost.class.path"
-      extension="${out.ext}" style="${args.xsl}"
-  	  filenameparameter="FILENAME"
-  	  filedirparameter="FILEDIR">
-      <excludesfile name="${dita.temp.dir}${file.separator}${resourceonlyfile}" if="resourceonlyfile"/>
-      <param name="TRANSTYPE" expression="${transtype}" />
-      <param name="FILTERFILE" expression="${dita.input.valfile.url}"
-        if="dita.input.valfile" />
-      <param name="CSS" expression="${args.css.file}"
-        if="args.css.file" />
-      <param name="CSSPATH" expression="${user.csspath}"
-        if="user.csspath" />
-      <param name="HDF" expression="${args.hdf}" if="args.hdf" />
-      <param name="HDR" expression="${args.hdr}" if="args.hdr" />
-      <param name="FTR" expression="${args.ftr}" if="args.ftr" />
-      <param name="DRAFT" expression="${args.draft}" if="args.draft" />
-      <param name="ARTLBL" expression="${args.artlbl}" if="args.artlbl" />
-      <param name="GENERATE-TASK-LABELS" expression="${args.gen.task.lbl}" if="args.gen.task.lbl" />
-      <param name="PRESERVE-DITA-CLASS" expression="${args.xhtml.classattr}" if="args.xhtml.classattr"/>
-      <param name="NOPARENTLINK" expression="${args.hide.parent.link}" if="args.hide.parent.link"/>
-  	  <param name="include.rellinks" expression="${include.rellinks}"/>
-      <param name="BREADCRUMBS" expression="${args.breadcrumbs}" if="args.breadcrumbs"/>
-      <param name="INDEXSHOW" expression="${args.indexshow}" if="args.indexshow" />
-      <param name="genDefMeta" expression="${args.gen.default.meta}" if="args.gen.default.meta" />
-      <param name="OUTEXT" expression="${out.ext}" if="out.ext" />
-      <param name="BASEDIR" expression="${basedir}"/>
-      <param name="OUTPUTDIR" expression="${output.dir}"/>
-      <param name="DBG" expression="${args.debug}" if="args.debug"/>
+    <topics.html>
       <dita:extension id="dita.conductor.xhtml.param" behavior="org.dita.dost.platform.InsertAction"/>
       <dita:extension id="dita.conductor.html.param" behavior="org.dita.dost.platform.InsertAction"/>
-  	  <xmlcatalog refid="dita.catalog"/>
-    </xslt>
+      <mapper classname="org.dita.dost.ant.types.JobMapper" to="${out.ext}"/>
+    </topics.html>
   </target>
   
   <!--To generate&copy inner files-->
   <!--requirement 1,2-->
   
   <target name="dita.inner.topics.html.common" unless="noTopic" if="inner.transform">
-    <xslt basedir="${dita.temp.dir}"
-      destdir="${output.dir}" includesfile="${dita.temp.dir}${file.separator}${fullditatopicfile}"
-      reloadstylesheet="${dita.xhtml.reloadstylesheet}"
-      classpathref="dost.class.path"
-      extension="${out.ext}" style="${args.xsl}"
-      filenameparameter="FILENAME"
-      filedirparameter="FILEDIR">
-    	<excludesfile name="${dita.temp.dir}${file.separator}${resourceonlyfile}" if="resourceonlyfile"/>
-      <param name="TRANSTYPE" expression="${transtype}" />
-      <param name="FILTERFILE" expression="${dita.input.valfile.url}"
-        if="dita.input.valfile" />
-      <param name="CSS" expression="${args.css.file}"
-        if="args.css.file" />
-      <param name="CSSPATH" expression="${user.csspath}"
-        if="user.csspath" />
-      <param name="HDF" expression="${args.hdf}" if="args.hdf" />
-      <param name="HDR" expression="${args.hdr}" if="args.hdr" />
-      <param name="FTR" expression="${args.ftr}" if="args.ftr" />
-      <param name="DRAFT" expression="${args.draft}" if="args.draft" />
-      <param name="ARTLBL" expression="${args.artlbl}" if="args.artlbl" />
-      <param name="GENERATE-TASK-LABELS" expression="${args.gen.task.lbl}" if="args.gen.task.lbl" />
-      <param name="PRESERVE-DITA-CLASS" expression="${args.xhtml.classattr}" if="args.xhtml.classattr"/>
-      <param name="NOPARENTLINK" expression="${args.hide.parent.link}" if="args.hide.parent.link"/>
-      <param name="include.rellinks" expression="${include.rellinks}"/>
-      <param name="BREADCRUMBS" expression="${args.breadcrumbs}" if="args.breadcrumbs"/>
-      <param name="INDEXSHOW" expression="${args.indexshow}" if="args.indexshow" />
-      <param name="genDefMeta" expression="${args.gen.default.meta}" if="args.gen.default.meta" />
-      <param name="OUTEXT" expression="${out.ext}" if="out.ext" />
-      <param name="BASEDIR" expression="${basedir}"/>
-      <param name="OUTPUTDIR" expression="${output.dir}"/>
-      <param name="DBG" expression="${args.debug}" if="args.debug"/>
+    <topics.html>
       <dita:extension id="dita.conductor.xhtml.param" behavior="org.dita.dost.platform.InsertAction"/>
       <dita:extension id="dita.conductor.html.param" behavior="org.dita.dost.platform.InsertAction"/>
-      <!--New,To generate&copy all dita files in the inputmap.dir,not all files in dita.temp.dir -->
-      <mapper type="regexp"
-        from="^(${tempdirToinputmapdir.relative.value})(.*?)(\.(\w+))$$" 
-        to="\2${out.ext}"/>
-      <xmlcatalog refid="dita.catalog"/>
-    </xslt>
+      <mapper classname="org.dita.dost.ant.types.JobMapper" to="${out.ext}"/>
+    </topics.html>
   </target>
   
 </project>

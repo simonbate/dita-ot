@@ -42,7 +42,7 @@ licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
 This file is part of the DITA Open Toolkit project.
-See the accompanying license.txt file for applicable licenses.
+See the accompanying LICENSE file for applicable license.
  */
 public final class IndexGroupProcessor {
     
@@ -112,7 +112,7 @@ public final class IndexGroupProcessor {
                 for (final String key : new ArrayList<String>(indexMap.keySet())) {
                     if (key.length() > 0) {
                         final String value = getValue((IndexEntry) indexMap.get(key));
-                        //						final char c = value.charAt(0);
+                        //                        final char c = value.charAt(0);
                         if (configEntry.isInRange(value,collator)) {
                             final IndexEntry entry = (IndexEntry) indexMap.remove(key);
                             group.addEntry(entry);
@@ -135,9 +135,9 @@ public final class IndexGroupProcessor {
                 }
             }
             /*
-			if (group.getEntries().length > 0) {
-				result.add(group);
-			}
+            if (group.getEntries().length > 0) {
+                result.add(group);
+            }
              */
         }
 
@@ -151,8 +151,8 @@ public final class IndexGroupProcessor {
               for (final String key : new ArrayList<String>(indexMap.keySet())) {
                     if (key.length() > 0) {
                         final String value = getValue((IndexEntry) indexMap.get(key));
-                        //						final char c = value.charAt(0);
-                        logger.info(MessageUtils.getInstance().getMessage("PDFJ003I", value).toString());
+                        //                        final char c = value.charAt(0);
+                        logger.info(MessageUtils.getMessage("PDFJ003I", value).toString());
                         final IndexEntry entry = (IndexEntry) indexMap.remove(key);
                         group.addEntry(entry);
                     }
@@ -165,11 +165,11 @@ public final class IndexGroupProcessor {
             for (final String key : new ArrayList<String>(indexMap.keySet())) {
                 if (key.length() > 0) {
                     final IndexEntry entry = (IndexEntry) indexMap.get(key);
-                    logger.error(MessageUtils.getInstance().getMessage("PDFJ001E", entry.toString()).toString());
+                    logger.error(MessageUtils.getMessage("PDFJ001E", entry.toString()).toString());
                 }
             }
             if (IndexPreprocessorTask.failOnError) {
-                logger.error(MessageUtils.getInstance().getMessage("PDFJ002E").toString());
+                logger.error(MessageUtils.getMessage("PDFJ002E").toString());
                 IndexPreprocessorTask.processingFaild=true;
             }
         }

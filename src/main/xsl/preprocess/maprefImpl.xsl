@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- This file is part of the DITA Open Toolkit project hosted on 
-    Sourceforge.net. See the accompanying license.txt file for 
-    applicable licenses.-->
-    <!-- (c) Copyright IBM Corp. 2006 All Rights Reserved. -->
+<!--
+This file is part of the DITA Open Toolkit project.
 
+Copyright 2006 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:xs="http://www.w3.org/2001/XMLSchema"
                 version="2.0"
@@ -14,12 +16,13 @@
 
   <xsl:import href="../common/dita-utilities.xsl"/>
   <xsl:import href="../common/output-message.xsl"/>
+  <!-- Deprecated since 2.3 -->
   <xsl:variable name="msgprefix">DOTX</xsl:variable>
 
   <xsl:param name="file-being-processed" as="xs:string"/>
   <xsl:param name="child-topicref-warning" as="xs:string" select="'true'"/>
 
-  <!-- list of attributes that can be overided. -->
+  <!-- list of attributes that can be overidden. -->
   <xsl:variable name="special-atts" select="('href', 'copy-to', 'class', 'linking', 'toc', 'print', 'audience', 'product', 'platform', 'otherprops', 'props')" as="xs:string*"/>
 
   <!-- the xsl:key to get all maprefs in the document in order to get reltable -->
@@ -28,8 +31,37 @@
 
   <xsl:template match="@* | node()">
     <xsl:copy>
-      <xsl:apply-templates select="@* | node()"/>
+      <xsl:apply-templates select="@* | node()">
+      </xsl:apply-templates>
     </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="@conref">
+    <xsl:param name="relative-path" as="xs:string" tunnel="yes">#none#</xsl:param>
+    <xsl:attribute name="conref">
+      <xsl:choose>
+        <xsl:when test="$relative-path = ('#none#', '') or starts-with(.,'#')">
+          <xsl:sequence select="."/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="dita-ot:normalize-uri(concat($relative-path, .))"/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:attribute>
+  </xsl:template>
+  
+  <xsl:template match="*[not(contains(@class,' map/topicref '))]/@href">
+    <xsl:param name="relative-path" as="xs:string" tunnel="yes">#none#</xsl:param>
+    <xsl:attribute name="href">
+      <xsl:choose>
+        <xsl:when test="not(contains(.,'://') or ../@scope = 'external' or $relative-path = ('#none#', ''))">
+          <xsl:value-of select="dita-ot:normalize-uri(concat($relative-path, .))"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:sequence select="."/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:attribute>
   </xsl:template>
 
   <xsl:template match="*[contains(@class, ' map/topicref ')][(@format, @dita-ot:orig-format) = 'ditamap']
@@ -37,13 +69,14 @@
                          (:@processing-role = 'resource-only' or:)
                          @scope = ('peer', 'external')]" priority="15">
     <xsl:copy>
-      <xsl:apply-templates select="@* | node()"/>
+      <xsl:apply-templates select="@* | node()">
+      </xsl:apply-templates>
     </xsl:copy>
   </xsl:template>
 
   <xsl:template match="*[contains(@class, ' map/topicref ')][(@format, @dita-ot:orig-format) = 'ditamap']" priority="10">
     <xsl:param name="refclass" select="(@dita-ot:orig-class, @class)[1]" as="xs:string"/>
-    <xsl:param name="relative-path" as="xs:string">#none#</xsl:param>
+    <xsl:param name="relative-path" as="xs:string" tunnel="yes">#none#</xsl:param>
     <xsl:param name="mapref-id-path" as="xs:string*"/>
     <xsl:param name="referTypeFlag" as="xs:string">#none#</xsl:param>
  
@@ -52,8 +85,7 @@
       <xsl:when test="generate-id(.) = $mapref-id-path">
         <!-- it is mapref but it didn't pass the loop dependency check -->
         <xsl:call-template name="output-message">
-          <xsl:with-param name="msgnum">053</xsl:with-param>
-          <xsl:with-param name="msgsev">E</xsl:with-param>
+          <xsl:with-param name="id" select="'DOTX053E'"/>
           <xsl:with-param name="msgparams">%1=<xsl:value-of select="$href"/></xsl:with-param>
         </xsl:call-template>
       </xsl:when>
@@ -85,7 +117,7 @@
           </xsl:if>
         </xsl:variable>
         <xsl:choose>
-          <xsl:when test="empty($file) or empty($file/*/*)">
+          <xsl:when test="empty($file)">
             <xsl:variable name="filename" as="xs:string?">
               <xsl:choose>
                 <xsl:when test="empty($href)"/>
@@ -106,8 +138,7 @@
               </xsl:choose>
             </xsl:variable>
             <xsl:call-template name="output-message">
-              <xsl:with-param name="msgnum">031</xsl:with-param>
-              <xsl:with-param name="msgsev">E</xsl:with-param>
+              <xsl:with-param name="id" select="'DOTX031E'"/>
               <xsl:with-param name="msgparams">%1=<xsl:value-of select="$filename"/></xsl:with-param>
             </xsl:call-template>
           </xsl:when>
@@ -127,13 +158,15 @@
                 </xsl:otherwise>
               </xsl:choose>
             </xsl:variable>
+            <xsl:variable name="targetTitleAndTopicmeta" as="element()*"
+              select="$file/*/*[contains(@class,' topic/title ') or contains(@class,' map/topicmeta ')]"/>
             <xsl:variable name="contents" as="node()*">
               <xsl:choose>
                 <xsl:when test="not(contains($href,'://') or empty($element-id) or $file/*[contains(@class,' map/map ')][@id = $element-id])">
                   <xsl:sequence select="$file//*[contains(@class,' map/topicref ')][@id = $element-id]"/>
                 </xsl:when>
                 <xsl:otherwise>
-                  <xsl:sequence select="$file/*/*[contains(@class,' map/topicref ')] |
+                  <xsl:sequence select="$file/*/*[contains(@class,' map/topicref ') or contains(@class,' map/navref ') or contains(@class,' map/anchor ')] |
                                         $file/*/processing-instruction()"/>
                 </xsl:otherwise>
               </xsl:choose>
@@ -166,12 +199,15 @@
                   <xsl:value-of select="normalize-space($keyscope)"/>
                 </xsl:attribute>
               </xsl:if>
-              <xsl:apply-templates select="@* except (@class, @href, @dita-ot:orig-href, @format, @dita-ot:orig-format, @keys, @keyscope)"/>
+              <xsl:apply-templates select="$target/@chunk"/>
+              <xsl:apply-templates select="@* except (@class, @href, @dita-ot:orig-href, @format, @dita-ot:orig-format, @keys, @keyscope, @type)"/>
+              <xsl:apply-templates select="$target/@*" mode="preserve-submap-attributes"/>
+              <xsl:apply-templates select="$targetTitleAndTopicmeta" mode="preserve-submap-title-and-topicmeta"/>
               <xsl:apply-templates select="*[contains(@class, ' ditavalref-d/ditavalref ')]"/>
               <xsl:apply-templates select="$contents">
                 <xsl:with-param name="refclass" select="$refclass"/>
                 <xsl:with-param name="mapref-id-path" select="$updated-id-path"/>
-                <xsl:with-param name="relative-path">
+                <xsl:with-param name="relative-path" tunnel="yes">
                   <xsl:choose>
                     <xsl:when test="not($relative-path = ('#none#', ''))">
                       <xsl:value-of select="$relative-path"/>
@@ -194,8 +230,7 @@
         <xsl:if test="$child-topicref-warning = 'true' and *[contains(@class, ' map/topicref ')]
                                                             [not(contains(@class, ' ditavalref-d/ditavalref '))]">
           <xsl:call-template name="output-message">
-            <xsl:with-param name="msgnum">068</xsl:with-param>
-            <xsl:with-param name="msgsev">W</xsl:with-param>
+            <xsl:with-param name="id" select="'DOTX068W'"/>
           </xsl:call-template>
         </xsl:if>
       </xsl:otherwise>
@@ -204,7 +239,7 @@
   
   <xsl:template match="*[contains(@class, ' map/topicref ')]" priority="5">
     <xsl:param name="refclass" select="@class"/>
-    <xsl:param name="relative-path" as="xs:string">#none#</xsl:param>
+    <xsl:param name="relative-path" as="xs:string" tunnel="yes">#none#</xsl:param>
     <xsl:param name="mapref-id-path" as="xs:string*"/>
     <xsl:param name="referTypeFlag" as="xs:string">#none#</xsl:param>
 
@@ -288,7 +323,7 @@
         <xsl:with-param name="name" select="'rev'"/>
       </xsl:call-template>
       <xsl:apply-templates select="@*[not(local-name() = $special-atts)] | node()">
-        <xsl:with-param name="relative-path" select="$relative-path"/>
+        <!--<xsl:with-param name="relative-path" select="$relative-path"/>-->
         <!-- pass the relative-path to sub elements -->
         <xsl:with-param name="mapref-id-path" select="$mapref-id-path"/>
         <!-- pass the mapref-id-path to sub elements -->
@@ -346,8 +381,7 @@
     <xsl:choose>
       <xsl:when test="generate-id(.) = $mapref-id-path">
         <xsl:call-template name="output-message">
-          <xsl:with-param name="msgnum">053</xsl:with-param>
-          <xsl:with-param name="msgsev">E</xsl:with-param>
+          <xsl:with-param name="id" select="'DOTX053E'"/>
           <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
         </xsl:call-template>
       </xsl:when>
@@ -389,6 +423,25 @@
     </xsl:call-template>
   </xsl:template>
 
+  <xsl:template match="@*" mode="preserve-submap-attributes">
+    <xsl:attribute name="dita-ot:submap-{local-name()}" select="."/>
+  </xsl:template>
+  
+  <xsl:template match="*[contains(@class,' topic/title ')]" mode="preserve-submap-title-and-topicmeta">
+    <submap-topicmeta class="+ map/topicmeta ditaot-d/submap-topicmeta ">
+      <submap-title class="+ topic/navtitle ditaot-d/submap-title ">
+        <xsl:apply-templates select="@*" mode="preserve-submap-attributes"/>
+        <xsl:apply-templates select="*|processing-instruction()|text()"/>
+      </submap-title>
+    </submap-topicmeta>
+  </xsl:template>
+  <xsl:template match="*[contains(@class,' map/topicmeta ')]" mode="preserve-submap-title-and-topicmeta">
+    <submap-topicmeta-container class="+ topic/foreign ditaot-d/submap-topicmeta-container ">
+      <xsl:apply-templates select="@*" mode="preserve-submap-attributes"/>
+      <xsl:apply-templates select="*|processing-instruction()|text()"/>
+    </submap-topicmeta-container>
+  </xsl:template>
+
   <xsl:template match="@* | node()" mode="reltable-copy">
     <xsl:copy>
       <xsl:apply-templates select="@* | node()" mode="reltable-copy"/>
@@ -400,6 +453,20 @@
     <xsl:attribute name="{name()}">
       <xsl:choose>
         <xsl:when test="not(contains(.,'://') or ../@scope = 'external' or $relative-path = ('#none#', ''))">
+          <xsl:value-of select="dita-ot:normalize-uri(concat($relative-path, .))"/>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:value-of select="."/>
+        </xsl:otherwise>
+      </xsl:choose>
+    </xsl:attribute>
+  </xsl:template>
+
+  <xsl:template match="@conref" mode="reltable-copy">
+    <xsl:param name="relative-path" as="xs:string" tunnel="yes">#none#</xsl:param>
+    <xsl:attribute name="conref">
+      <xsl:choose>
+        <xsl:when test="not($relative-path = ('#none#', ''))">
           <xsl:value-of select="dita-ot:normalize-uri(concat($relative-path, .))"/>
         </xsl:when>
         <xsl:otherwise>

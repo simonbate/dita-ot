@@ -1,6 +1,11 @@
+/*
+ * This file is part of the DITA Open Toolkit project.
+ *
+ * Copyright 2012 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
+ */
 package org.dita.dost.writer;
-
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
 
 import java.io.File;
 import java.io.InputStream;
@@ -13,7 +18,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.sax.SAXSource;
 
-import org.custommonkey.xmlunit.XMLUnit;
 import org.dita.dost.TestUtils;
 import org.dita.dost.reader.DitaValReader;
 import org.dita.dost.util.FilterUtils;
@@ -23,27 +27,29 @@ import org.junit.Test;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
+import static org.dita.dost.TestUtils.assertXMLEqual;
+
 public class ProfilingFilterTest {
 
 	@BeforeClass
     public static void setUp() {
-		TestUtils.resetXMLUnit();
-		XMLUnit.setIgnoreWhitespace(true);
-        XMLUnit.setIgnoreComments(true);
 	}
 	
 	@Test
 	public void testNoFilter() throws Exception {
-		test(new FilterUtils(false, Collections.EMPTY_MAP), "topic.dita", "topic.dita");
+		test(new FilterUtils(false), "topic.dita", "topic.dita");
+	}
 
+	@Test
+	public void testFilter() throws Exception {
 		final DitaValReader filterReader = new DitaValReader();
 		filterReader.read(new File(getClass().getClassLoader().getResource("ProfilingFilterTest/src/topic1.ditaval").toURI()).getAbsoluteFile());
-        final FilterUtils filterUtils = new FilterUtils(false, filterReader.getFilterMap());
+        final FilterUtils filterUtils = new FilterUtils(false, filterReader.getFilterMap(), null, null);
 		filterUtils.setLogger(new TestUtils.TestLogger());
         test(filterUtils, "topic.dita", "topic1.dita");
 
-        test(new FilterUtils(false, Collections.EMPTY_MAP), "map.ditamap", "map_xhtml.ditamap");
-        test(new FilterUtils(true, Collections.EMPTY_MAP), "map.ditamap", "map_pdf.ditamap");
+        test(new FilterUtils(false), "map.ditamap", "map_xhtml.ditamap");
+        test(new FilterUtils(true), "map.ditamap", "map_pdf.ditamap");
 	}
 	
 	private void test(final FilterUtils filterUtils, final String srcFile, final String expFile) throws Exception {
@@ -57,10 +63,14 @@ public class ProfilingFilterTest {
 		final SAXSource s = new SAXSource(f, new InputSource(src));
 		final DOMResult d = new DOMResult();
 		t.transform(s, d);
-		
-		final DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-		final InputStream exp = getClass().getClassLoader().getResourceAsStream("ProfilingFilterTest/exp/" + expFile);
-		assertXMLEqual(db.parse(exp), (Document) d.getNode());
+
+		final DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
+		builderFactory.setNamespaceAware(true);
+		builderFactory.setIgnoringComments(true);
+		final DocumentBuilder db = builderFactory.newDocumentBuilder();
+		try (final InputStream exp = getClass().getClassLoader().getResourceAsStream("ProfilingFilterTest/exp/" + expFile)) {
+			assertXMLEqual(db.parse(exp), (Document) d.getNode());
+		}
 	}
 
 

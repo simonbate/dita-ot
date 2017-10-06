@@ -1,6 +1,9 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2011 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.util;
 
@@ -45,14 +48,6 @@ public final class JobTest {
     public void testSetProperty() {
         job.setProperty("foo", "bar");
         assertEquals("bar", job.getProperty("foo"));
-    }
-
-    @Test
-    public void testGetCopytoMap() throws URISyntaxException {
-        final Map<URI, URI> exp = new HashMap<URI, URI>();
-        exp.put(new URI("foo"), new URI("bar"));
-        exp.put(new URI("baz"), new URI("qux"));
-        assertEquals(exp, job.getCopytoMap());
     }
 
     @Test

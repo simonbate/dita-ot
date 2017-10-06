@@ -27,8 +27,8 @@ These terms and conditions supersede the terms and conditions in any
 licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
-This file is part of the DITA Open Toolkit project hosted on Sourceforge.net. 
-See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project.
+See the accompanying LICENSE file for applicable license.
 -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0">
@@ -78,19 +78,19 @@ See the accompanying license.txt file for applicable licenses.
     <xsl:attribute-set name="synph">
     </xsl:attribute-set>
 
-    <xsl:attribute-set name="oper" use-attribute-sets="base-font">
+    <xsl:attribute-set name="oper">
         <xsl:attribute name="font-family">monospace</xsl:attribute>
     </xsl:attribute-set>
 
-    <xsl:attribute-set name="delim" use-attribute-sets="base-font">
+    <xsl:attribute-set name="delim">
         <xsl:attribute name="font-family">monospace</xsl:attribute>
     </xsl:attribute-set>
 
-    <xsl:attribute-set name="sep" use-attribute-sets="base-font">
+    <xsl:attribute-set name="sep">
         <xsl:attribute name="font-family">monospace</xsl:attribute>
     </xsl:attribute-set>
 
-    <xsl:attribute-set name="apiname" use-attribute-sets="base-font">
+    <xsl:attribute-set name="apiname">
         <xsl:attribute name="font-family">monospace</xsl:attribute>
     </xsl:attribute-set>
 
@@ -100,7 +100,7 @@ See the accompanying license.txt file for applicable licenses.
     <xsl:attribute-set name="plentry">
     </xsl:attribute-set>
 
-    <xsl:attribute-set name="pt" use-attribute-sets="base-font">
+    <xsl:attribute-set name="pt">
         <xsl:attribute name="font-weight">bold</xsl:attribute>
         <xsl:attribute name="text-indent">0em</xsl:attribute>
         <xsl:attribute name="end-indent">24pt</xsl:attribute>
@@ -110,7 +110,7 @@ See the accompanying license.txt file for applicable licenses.
         <xsl:attribute name="font-weight">bold</xsl:attribute>
     </xsl:attribute-set>
 
-    <xsl:attribute-set name="pd" use-attribute-sets="base-font">
+    <xsl:attribute-set name="pd">
         <xsl:attribute name="space-before">0.3em</xsl:attribute>
         <xsl:attribute name="space-after">0.5em</xsl:attribute>
         <xsl:attribute name="start-indent">72pt</xsl:attribute>
@@ -141,7 +141,7 @@ See the accompanying license.txt file for applicable licenses.
         <xsl:attribute name="keep-with-next.within-column">always</xsl:attribute>
     </xsl:attribute-set>
 
-    <xsl:attribute-set name="kwd" use-attribute-sets="base-font">
+    <xsl:attribute-set name="kwd">
         <xsl:attribute name="font-family">monospace</xsl:attribute>
     </xsl:attribute-set>
 
@@ -149,7 +149,7 @@ See the accompanying license.txt file for applicable licenses.
         <xsl:attribute name="text-decoration">underline</xsl:attribute>
     </xsl:attribute-set>
 
-    <xsl:attribute-set name="fragref" use-attribute-sets="base-font">
+    <xsl:attribute-set name="fragref">
         <xsl:attribute name="font-family">monospace</xsl:attribute>
     </xsl:attribute-set>
 

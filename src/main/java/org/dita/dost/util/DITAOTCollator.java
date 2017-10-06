@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2006 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2006 All Rights Reserved.
  */
 package org.dita.dost.util;
 
@@ -40,11 +40,7 @@ public final class DITAOTCollator implements Comparator {
             throw new NullPointerException("Locale may not be null");
         }
         DITAOTCollator instance = null;
-        instance = cache.get(locale);
-        if (instance == null) {
-            instance = new DITAOTCollator(locale);
-            cache.put(locale, instance);
-        }
+        instance = cache.computeIfAbsent(locale, DITAOTCollator::new);
         return instance;
     }
 
@@ -60,7 +56,6 @@ public final class DITAOTCollator implements Comparator {
 
     /**
      * Constructor specifying Locale.
-     * @param locale
      */
     private DITAOTCollator(final Locale locale) {
         init(locale);
@@ -81,7 +76,6 @@ public final class DITAOTCollator implements Comparator {
 
     /**
      * Initialization.
-     * @param locale
      */
     private void init(final Locale locale) {
         Class<?> c = null;

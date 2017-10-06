@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2011 Jarno Elovirta
+
+See the accompanying LICENSE file for applicable license.
+-->
 <codepages>
   <language lang="en-us">
     <cp format="html" encoding="819" charset="iso-8859-1"/>
@@ -203,6 +210,10 @@
   <language lang="ur-pk">
     <cp format="html" encoding="utf-8" charset="utf-8"/>
     <cp format="windows" encoding="1256" charset="windows-1256"/>
+  </language>
+  <language lang="vi-vn">
+    <cp format="html" encoding="utf-8" charset="utf-8"/>
+    <cp format="windows" encoding="1258" charset="windows-1258"/>
   </language>
   <language lang="zh-cn">
     <cp format="html" encoding="1386" charset="gb2312"/>

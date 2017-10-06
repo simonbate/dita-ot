@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- This file is part of the DITA Open Toolkit project.
-     See the accompanying license.txt file for applicable licenses.-->
-<!-- (c) Copyright IBM Corp. 2004, 2006 All Rights Reserved. -->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2004, 2006 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 <!-- Refactoring completed March and April 2007. The code now contains 
      numerous hooks that can be overridden using modes. Specifically,
      the most important modes will be those that control what is inherited or
@@ -59,6 +63,8 @@ Other modes can be found within the code, and may or may not prove useful for ov
       </xsl:when>
     </xsl:choose>
   </xsl:function>
+  
+  <xsl:key name="topic-by-id" match="*[contains(@class,' topic/topic ')]" use="@id"/>
 
   <!-- Find the relative path to another topic or map -->
   <xsl:template name="find-relative-path">
@@ -134,7 +140,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
           </xsl:if>
           <xsl:if test="(:not(@processing-role) and :)not($parent-processing-role='resource-only')">
             <xsl:apply-templates select="." mode="mappull:inherit-and-set-attribute"><xsl:with-param name="attrib">processing-role</xsl:with-param></xsl:apply-templates>
-      	  </xsl:if>
+          </xsl:if>
           <xsl:if test="(:not(@print) and :)$print!='#none#'">
             <xsl:attribute name="print"><xsl:value-of select="$print"/></xsl:attribute>
           </xsl:if>
@@ -495,7 +501,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
 
           <!--finding type based on name of the target element in a particular topic in another file-->
           <xsl:when test="$topicpos='otherfile'">
-            <xsl:variable name="target" select="$doc//*[@id=$topicid]" as="element()?"/>
+            <xsl:variable name="target" select="if (exists($doc)) then (key('topic-by-id', $topicid, $doc)[1]) else ()" as="element()?"/>
             <xsl:choose>
               <xsl:when test="$target[contains(@class, $classval)]">
                 <xsl:attribute name="type">
@@ -505,8 +511,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
               <xsl:when test="$topicid!='#none#' and not($target[contains(@class, ' topic/topic ')])">
                 <!-- topicid does not point to a valid topic -->
                 <xsl:call-template name="output-message">
-                  <xsl:with-param name="msgnum">061</xsl:with-param>
-                  <xsl:with-param name="msgsev">W</xsl:with-param>
+                  <xsl:with-param name="id" select="'DOTX061W'"/>
                   <xsl:with-param name="msgparams">%1=<xsl:value-of select="$topicid"/></xsl:with-param>
                 </xsl:call-template>
               </xsl:when>
@@ -531,12 +536,11 @@ Other modes can be found within the code, and may or may not prove useful for ov
       </xsl:when>
       <!-- Type is set locally for a dita topic; warn if it is not correct. -->
       <xsl:when test="$scope!='external' and $scope!='peer' and ($format='#none#' or $format='dita')">
-        <xsl:variable name="target" select="$doc//*[@id=$topicid]" as="element()?"/>
+        <xsl:variable name="target" select="if (exists($doc)) then (key('topic-by-id', $topicid, $doc)[1]) else ()" as="element()?"/>
         <xsl:if test="$topicid!='#none#' and not($target[contains(@class, ' topic/topic ')])">
           <!-- topicid does not point to a valid topic -->
           <xsl:call-template name="output-message">
-            <xsl:with-param name="msgnum">061</xsl:with-param>
-            <xsl:with-param name="msgsev">W</xsl:with-param>
+            <xsl:with-param name="id" select="'DOTX061W'"/>
             <xsl:with-param name="msgparams">%1=<xsl:value-of select="$topicid"/></xsl:with-param>
           </xsl:call-template>
         </xsl:if>
@@ -631,7 +635,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
       <xsl:when test="@href=''"/>
       <!--grabbing text from a particular topic in another file-->
       <xsl:when test="$topicpos='otherfile'">
-        <xsl:variable name="target" select="$doc//*[@id=$topicid]" as="element()?"/>
+        <xsl:variable name="target" select="if (exists($doc)) then (key('topic-by-id', $topicid, $doc)[1]) else ()" as="element()?"/>
         <xsl:choose>
           <xsl:when
             test="$target[contains(@class, $classval)]/*[contains(@class, ' topic/titlealts ')]/*[contains(@class, ' topic/navtitle ')]">
@@ -821,7 +825,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
     <xsl:choose>
       <xsl:when test="@navtitle"><xsl:value-of select="@navtitle"/></xsl:when>
       <xsl:when test="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]">
-        <xsl:copy-of select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]/node()"/>
+        <xsl:apply-templates select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]" mode="text-only"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="@href"/>
@@ -835,7 +839,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
     <xsl:choose>
       <xsl:when test="@navtitle"><xsl:value-of select="@navtitle"/></xsl:when>
       <xsl:when test="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]">
-        <xsl:copy-of select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]/node()"/>
+        <xsl:apply-templates select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]" mode="text-only"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:value-of select="@href"/>
@@ -884,7 +888,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
 
             <!--grabbing text from a particular topic in another file-->
             <xsl:when test="$topicpos='otherfile'">
-              <xsl:variable name="target" select="$doc//*[@id=$topicid]" as="element()?"/>
+              <xsl:variable name="target" select="if (exists($doc)) then (key('topic-by-id', $topicid, $doc)[1]) else ()" as="element()?"/>
               <xsl:choose>
                 <xsl:when test="$target[contains(@class, $classval)]/*[contains(@class, ' topic/title ')]">
                   <xsl:variable name="grabbed-value" as="xs:string">
@@ -942,7 +946,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
     <xsl:choose>
       <xsl:when test="@navtitle"><xsl:value-of select="@navtitle"/></xsl:when>
       <xsl:when test="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]">
-        <xsl:copy-of select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]/node()"/>
+        <xsl:apply-templates select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]" mode="text-only"/>
       </xsl:when>
       <xsl:otherwise><xsl:value-of select="@href"/></xsl:otherwise>
     </xsl:choose>
@@ -951,7 +955,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
     <xsl:choose>
       <xsl:when test="@navtitle"><xsl:value-of select="@navtitle"/></xsl:when>
       <xsl:when test="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]">
-        <xsl:copy-of select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]/node()"/>
+        <xsl:apply-templates select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]" mode="text-only"/>
       </xsl:when>
       <xsl:otherwise>#none#</xsl:otherwise>
     </xsl:choose>
@@ -960,7 +964,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
     <xsl:choose>
       <xsl:when test="@navtitle"><xsl:value-of select="@navtitle"/></xsl:when>
       <xsl:when test="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]">
-        <xsl:copy-of select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]/node()"/>
+        <xsl:apply-templates select="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' topic/navtitle ')]" mode="text-only"/>
       </xsl:when>
       <xsl:otherwise>
         <xsl:text>#none#</xsl:text>
@@ -979,6 +983,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
     <xsl:param name="topicid" as="xs:string"/>
     <xsl:param name="classval" as="xs:string"/>
     <xsl:param name="doc" as="document-node()?"/>
+    <xsl:variable name="map-uri" as="xs:anyURI" select="base-uri(.)"/>
     <xsl:choose>
       <xsl:when test="*[contains(@class, ' map/topicmeta ')]/*[contains(@class, ' map/shortdesc ')]">
         <xsl:apply-templates select="." mode="mappull:add-usershortdesc-PI"/>
@@ -991,14 +996,16 @@ Other modes can be found within the code, and may or may not prove useful for ov
       </xsl:when>
       <!--try retrieving from a particular topic in another file-->
       <xsl:when test="$topicpos='otherfile'">
-        <xsl:variable name="target" select="$doc//*[@id=$topicid]" as="element()?"/>
+        <xsl:variable name="target" select="if (exists($doc)) then (key('topic-by-id', $topicid, $doc)[1]) else ()" as="element()?"/>
         <xsl:if
             test="($target[contains(@class, $classval)])[1]/*[contains(@class, ' topic/shortdesc ')]|
                   ($target[contains(@class, $classval)])[1]/*[contains(@class, ' topic/abstract ')]/*[contains(@class, ' topic/shortdesc ')]">
           <xsl:apply-templates select="." mode="mappull:add-genshortdesc-PI"/>
           <shortdesc class="- map/shortdesc ">
             <xsl:apply-templates select="($target[contains(@class, $classval)])[1]/*[contains(@class, ' topic/shortdesc ')] |
-                                         ($target[contains(@class, $classval)])[1]/*[contains(@class, ' topic/abstract ')]/*[contains(@class, ' topic/shortdesc ')]" mode="copy-shortdesc"/>
+                                         ($target[contains(@class, $classval)])[1]/*[contains(@class, ' topic/abstract ')]/*[contains(@class, ' topic/shortdesc ')]" mode="copy-shortdesc">
+              <xsl:with-param name="map-uri" select="$map-uri" tunnel="yes"/>
+            </xsl:apply-templates>
           </shortdesc>
         </xsl:if>
       </xsl:when>
@@ -1012,7 +1019,9 @@ Other modes can be found within the code, and may or may not prove useful for ov
             <xsl:apply-templates
               select="($doc//*[contains(@class, ' topic/topic ')])[1]/*[contains(@class, ' topic/shortdesc ')]|
                       ($doc//*[contains(@class, ' topic/topic ')])[1]/*[contains(@class, ' topic/abstract ')]/*[contains(@class, ' topic/shortdesc ')]"
-              mode="copy-shortdesc"/>
+              mode="copy-shortdesc">
+              <xsl:with-param name="map-uri" select="$map-uri" tunnel="yes"/>
+            </xsl:apply-templates>
           </shortdesc>
         </xsl:if>
       </xsl:when>
@@ -1139,62 +1148,32 @@ Other modes can be found within the code, and may or may not prove useful for ov
     </xsl:copy>
   </xsl:template>
   
-  <xsl:template match="*[contains(@class,' topic/xref ')]"
-    mode="copy-shortdesc">
-    <xsl:choose>
-      <xsl:when
-        test="not(@href) or @scope='peer' or @scope='external'">
-        <xsl:copy>
-          <xsl:apply-templates select="@*|text()|*|comment()|processing-instruction()"
-            mode="copy-shortdesc" />
-        </xsl:copy>
-      </xsl:when>
-      <xsl:when
-        test="@format and not(@format='dita')">
-        <xsl:copy>
-          <xsl:apply-templates select="@*|text()|*|comment()|processing-instruction()"
-            mode="copy-shortdesc" />
-        </xsl:copy>
-      </xsl:when>
-      <xsl:when test="not(contains(@href,'/'))"><!-- May be DITA, but in the same directory -->
-        <xsl:copy>
-          <xsl:apply-templates select="@*|text()|*|comment()|processing-instruction()"
-            mode="copy-shortdesc" />
-        </xsl:copy>
-      </xsl:when>
-      <xsl:when test="text()|*[not(contains(@class,' topic/desc '))]">
-        <xsl:apply-templates
-          select="*[not(contains(@class,' topic/desc '))]|text()|comment()|processing-instruction()"
-          mode="copy-shortdesc" />
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:text>***</xsl:text><!-- go get the target text -->
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-  
   <xsl:template match="text()" mode="copy-shortdesc" as="xs:string">
-    <xsl:value-of select="translate(.,'&#xA;',' ')" />
+    <xsl:value-of select="translate(.,'&#xA;',' ')"/>
   </xsl:template>
 
-
-  <xsl:template match="*[contains(@class,' topic/shortdesc ')]"
-    mode="copy-shortdesc">
+  <xsl:template match="*[contains(@class,' topic/shortdesc ')]" mode="copy-shortdesc">
     <xsl:if test="preceding-sibling::*[contains(@class,' topic/shortdesc ')]">
       <!-- In an abstract, and this is not the first -->
       <xsl:text> </xsl:text>
     </xsl:if>
-    <xsl:apply-templates select="*|text()|comment()|processing-instruction()" mode="copy-shortdesc" />
+    <xsl:apply-templates select="node()" mode="copy-shortdesc"/>
   </xsl:template>
   
-  <xsl:template match="@id" mode="copy-shortdesc" />
+  <xsl:template match="@id" mode="copy-shortdesc"/>
   
-  <xsl:template match="*[contains(@class,' topic/indexterm ')]"
-    mode="copy-shortdesc" />
+  <xsl:template match="@href" mode="copy-shortdesc">
+    <xsl:param name="map-uri" as="xs:anyURI?" tunnel="yes"/>
+    <xsl:variable name="abs-href" select="resolve-uri(., base-uri(.))" as="xs:anyURI"/>
+    <xsl:variable name="href" select="dita-ot:relativize($map-uri, $abs-href)" as="xs:anyURI"/>
+    <xsl:attribute name="{name()}" select="$href"/>
+  </xsl:template>
   
-  <xsl:template match="*|@*|comment()|processing-instruction()" mode="copy-shortdesc">
+  <xsl:template match="*[contains(@class,' topic/indexterm ')]" mode="copy-shortdesc" />
+  
+  <xsl:template match="@* | node()" mode="copy-shortdesc" name="copy-shortdesc" priority="-10">
     <xsl:copy>
-      <xsl:apply-templates select="@*|text()|*|comment()|processing-instruction()" mode="copy-shortdesc" />
+      <xsl:apply-templates select="@* | node()" mode="copy-shortdesc"/>
     </xsl:copy>
   </xsl:template>
 
@@ -1204,8 +1183,7 @@ Other modes can be found within the code, and may or may not prove useful for ov
   <!-- Deprecated -->
   <xsl:template match="*" mode="ditamsg:unknown-extension">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">006</xsl:with-param>
-      <xsl:with-param name="msgsev">E</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX006E'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
@@ -1213,23 +1191,20 @@ Other modes can be found within the code, and may or may not prove useful for ov
   <xsl:template match="*" mode="ditamsg:incorect-inherited-format">
     <xsl:param name="format" as="xs:string"/>
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">016</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX016W'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="$format"/>;%2=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:empty-href">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">017</xsl:with-param>
-      <xsl:with-param name="msgsev">E</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX017E'"/>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:type-mismatch-info">
     <xsl:param name="type" as="xs:string"/>
     <xsl:param name="actual-name" as="xs:string"/>
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">018</xsl:with-param>
-      <xsl:with-param name="msgsev">I</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX018I'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="$type"/>;%2=<xsl:value-of select="$actual-name"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
@@ -1237,64 +1212,55 @@ Other modes can be found within the code, and may or may not prove useful for ov
     <xsl:param name="type" as="xs:string"/>
     <xsl:param name="actual-name" as="xs:string"/>
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">019</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX019W'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="$type"/>;%2=<xsl:value-of select="$actual-name"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:missing-navtitle-peer">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">020</xsl:with-param>
-      <xsl:with-param name="msgsev">E</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX020E'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:missing-navtitle-non-dita">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">021</xsl:with-param>
-      <xsl:with-param name="msgsev">E</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX021E'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:using-linktext-for-navtitle">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">022</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX022W'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:cannot-retrieve-navtitle">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">023</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX023W'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:missing-navtitle-and-linktext-peer">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">024</xsl:with-param>
-      <xsl:with-param name="msgsev">E</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX024E'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:missing-navtitle-and-linktext-non-dita">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">025</xsl:with-param>
-      <xsl:with-param name="msgsev">E</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX025E'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:no-linktext-using-fallback">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">026</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX026W'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>
   <xsl:template match="*" mode="ditamsg:no-linktext-no-fallback">
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgnum">027</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX027W'"/>
       <xsl:with-param name="msgparams">%1=<xsl:value-of select="@href"/></xsl:with-param>
     </xsl:call-template>
   </xsl:template>

@@ -26,8 +26,8 @@ These terms and conditions supersede the terms and conditions in any
 licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
-This file is part of the DITA Open Toolkit project hosted on Sourceforge.net. 
-See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project. 
+See the accompanying LICENSE file for applicable license.
 -->
 <vars xmlns="http://www.idiominc.com/opentopic/vars">
 
@@ -115,9 +115,21 @@ See the accompanying license.txt file for applicable licenses.
     <!-- The formatting used to display ordered lists (e.g., "1., 2." or 
          "1), 2)" -->
     <variable id="Ordered List Number"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Number 1"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Number 2"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Number 3"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Number 4"><param ref-name="number"/>. </variable>
+    <variable id="Ordered List Format 1">1</variable>
+    <variable id="Ordered List Format 2">a</variable>
+    <variable id="Ordered List Format 3">1</variable>
+    <variable id="Ordered List Format 4">a</variable>
 
     <!-- The unordered list bullet   -->
     <variable id="Unordered List bullet">•</variable>
+    <variable id="Unordered List bullet 1">•</variable>
+    <variable id="Unordered List bullet 2">•</variable>
+    <variable id="Unordered List bullet 3">•</variable>
+    <variable id="Unordered List bullet 4">•</variable>
 
     <!-- The heading string to put at the top of the Table of Contents -->
     <variable id="Table of Contents">Inhalt</variable>
@@ -132,13 +144,20 @@ See the accompanying license.txt file for applicable licenses.
     <!-- The string used to label an appendix within the table of contents. -->
     <variable id="Table of Contents Appendix">Anhang <param ref-name="number"/>: </variable>
 
-    <!-- The string used to label an part within the table of contents. -->
+    <!-- The string used to label a part within the table of contents. -->
     <variable id="Table of Contents Part">Teil <param ref-name="number"/>: </variable>
 
-    <!-- The string used to label an preface within the table of contents. -->
+    <!-- The string used to label a preface within the table of contents. -->
     <variable id="Table of Contents Preface">Einleitung </variable>
-    <variable id="Preface title">Einleitung</variable>
 
+    <!-- The string used to label Notices within the table of contents. -->
+    <variable id="Table of Contents Notices"/>
+
+    <variable id="Preface title">Einleitung</variable>
+    
+    <!-- The string used to label an notices in body text. -->
+    <variable id="Notices title"/>
+    
     <!-- The heading to put at the top of a chapter when creating a
          chapter-level "mini-TOC" -->
     <variable id="Mini Toc">Themen: </variable>
@@ -166,14 +185,9 @@ See the accompanying license.txt file for applicable licenses.
          text in case it's not specified in source. -->
     <variable id="Cross-Reference">Querverweis auf: </variable>
 
-    <!-- Default content-reference text prefix. Used to generate reference 
+    <!-- Prefix for unresolved content reference. Used to generate reference 
          text in case target cannot be resolved. -->
     <variable id="Content-Reference">Inhaltsverweis auf: </variable>
-
-    <!-- Default title text for referenced section title. Used to generate 
-         reference text in case reference has no explicit content and
-         referenced section has no title. -->
-    <variable id="Untitled section">Unbenannter Abschnitt.</variable>
 
     <!-- Default title text for referenced list item. Used to generate
          reference text in case reference has no explicit content and 
@@ -249,48 +263,11 @@ See the accompanying license.txt file for applicable licenses.
     <!-- Image path to use for a note of "other" type. -->
     <variable id="other Note Image Path"></variable>
 
-    <!--
-       Strings used in the online-help publishing.
-    -->
+    <!-- The title of the links to child topics -->
+    <variable id="Child topics"/>
 
-    <!-- The title of the "contents" button in online-help output -->
-    <variable id="Contents button title">Inhalt</variable>
-
-    <!-- The title of the "index" button in online-help output -->
-    <variable id="Index button title">Index</variable>
-
-    <!-- The title of the "search" button in online-help output -->
-    <variable id="Search button title">Suche</variable>
-
-    <!-- The title of the "back" button in online-help output -->
-    <variable id="Back button title">Zurück</variable>
-
-    <!-- The title of the "forward" button in online-help output -->
-    <variable id="Forward button title">Vorwärts</variable>
-
-    <!-- The title of the "main page" button in online-help output -->
-    <variable id="Main page button title">Hauptseite</variable>
-
-    <!-- The title of the "previous page" button in online-help output -->
-    <variable id="Previous page button title">Vorige Seite</variable>
-
-    <!-- The title of the "next page" button in online-help output -->
-    <variable id="Next page button title">Folgende Seite</variable>
-
-    <!-- The "online help" document title prefix in online-help output -->
-    <variable id="Online help prefix">On-line-Hilfe</variable>
-
-    <!-- The search by index field title in online-help output -->
-    <variable id="Search index field title">Suche nach dem Schlüsselwort:</variable>
-
-    <!-- The search by index button title in online-help output -->
-    <variable id="Search index button title">Sehen Sie</variable>
-
-    <!-- The search by text field title in online-help output -->
-    <variable id="Search text field title">Suchhilfe für:</variable>
-
-    <!-- The search by text button title in online-help output -->
-    <variable id="Search text button title">Suche</variable>
+    <!-- The title of the links to Related references -->
+    <variable id="Related references"/>
 
     <!--Label for a step with importance="optional"-->
     <variable id="Optional Step">Optional:</variable>
@@ -304,6 +281,10 @@ See the accompanying license.txt file for applicable licenses.
     <variable id="Task Result"></variable>
     <variable id="Task Example"></variable>
     <variable id="Task Postreq"></variable>
+    <variable id="Step Number"><param ref-name="number"/>. </variable>
+    <variable id="Step Format">1</variable>
+    <variable id="Substep Number"><param ref-name="number"/>) </variable>
+    <variable id="Substep Format">a</variable>
     <variable id="Glossary odd footer"/>
     <variable id="Glossary even footer"/>
     <variable id="Glossary odd header"><param ref-name="prodname"/> | <param ref-name="heading"/> | <param ref-name="pagenum"/></variable>
@@ -312,7 +293,6 @@ See the accompanying license.txt file for applicable licenses.
     <variable id="List of Tables">Tabellenverzeichnis</variable>
     <variable id="List of Figures">Abbildungsverzeichnis</variable>
 
-  <variable id="#menucascade-separator"> &gt; </variable>
-  <variable id="#quote-start">„</variable>
-  <variable id="#quote-end">“</variable>
+  <variable id="#quote-start"><variable id="OpenQuote"/></variable>
+  <variable id="#quote-end"><variable id="CloseQuote"/></variable>
 </vars>

@@ -1,18 +1,17 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2013 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.writer;
 
 import static org.dita.dost.util.Constants.*;
 import static org.dita.dost.util.URLUtils.*;
 
-import java.io.File;
 import java.net.URI;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.dita.dost.log.MessageUtils;
 import org.dita.dost.util.*;
@@ -75,10 +74,10 @@ public final class ConkeyrefFilter extends AbstractXMLFilter {
                     }
                     XMLUtils.addOrSetAttribute(resAtts, ATTRIBUTE_NAME_CONREF, target.toString());
                 } else {
-                    logger.warn(MessageUtils.getInstance().getMessage("DOTJ060W", key, conkeyref).toString());
+                    logger.warn(MessageUtils.getMessage("DOTJ060W", key, conkeyref).toString());
                 }
             } else {
-                logger.error(MessageUtils.getInstance().getMessage("DOTJ046E", conkeyref).toString());
+                logger.error(MessageUtils.getMessage("DOTJ046E", conkeyref).toString());
             }
         }
         getContentHandler().startElement(uri, localName, name, resAtts != null ? resAtts : atts);
@@ -91,7 +90,7 @@ public final class ConkeyrefFilter extends AbstractXMLFilter {
      * @return updated href URI
      */
     private URI getRelativePath(final URI href) {
-        final URI keyValue = job.tempDir.toURI().resolve(stripFragment(href));
+        final URI keyValue = job.tempDirURI.resolve(stripFragment(href));
         return URLUtils.getRelativePath(currentFile, keyValue);
     }
 

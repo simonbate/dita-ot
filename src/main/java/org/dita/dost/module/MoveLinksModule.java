@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2004, 2005 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2004, 2005 All Rights Reserved.
  */
 package org.dita.dost.module;
 
@@ -12,13 +12,14 @@ import org.dita.dost.exception.DITAOTException;
 import org.dita.dost.pipeline.AbstractPipelineInput;
 import org.dita.dost.pipeline.AbstractPipelineOutput;
 import org.dita.dost.util.CatalogUtils;
+import org.dita.dost.util.Job.FileInfo;
+import org.dita.dost.util.XMLUtils;
 import org.dita.dost.writer.DitaLinksWriter;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
@@ -31,6 +32,7 @@ import java.util.Map;
 
 import static org.dita.dost.util.Constants.*;
 import static org.dita.dost.util.URLUtils.*;
+import static org.dita.dost.util.XMLUtils.withLogger;
 
 /**
  * MoveLinksModule implements move links step in preprocess. It reads the map links
@@ -47,18 +49,25 @@ final class MoveLinksModule extends AbstractPipelineModuleImpl {
      */
     @Override
     public AbstractPipelineOutput execute(final AbstractPipelineInput input) throws DITAOTException {
-        final File inputFile = new File(job.tempDir, input.getAttribute(ANT_INVOKER_PARAM_INPUTMAP));
+        final FileInfo fi = job.getFileInfo(job.getInputMap());
+        if (!ATTR_FORMAT_VALUE_DITAMAP.equals(fi.format)) {
+            return null;
+        }
+        final File inputFile = new File(job.tempDirURI.resolve(fi.uri));
         final File styleFile = new File(input.getAttribute(ANT_INVOKER_EXT_PARAM_STYLE));
 
         Document doc;
         InputStream in = null;
         try {
-            doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-            final Transformer transformer = TransformerFactory.newInstance().newTransformer(new StreamSource(styleFile));
+            doc = XMLUtils.getDocumentBuilder().newDocument();
+            final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            transformerFactory.setURIResolver(CatalogUtils.getCatalogResolver());
+            final Transformer transformer = withLogger(transformerFactory.newTransformer(new StreamSource(styleFile)), logger);
             transformer.setURIResolver(CatalogUtils.getCatalogResolver());
             if (input.getAttribute("include.rellinks") != null) {
                 transformer.setParameter("include.rellinks", input.getAttribute("include.rellinks"));
             }
+            transformer.setParameter("INPUTMAP", job.getInputMap());
             in = new BufferedInputStream(new FileInputStream(inputFile));
             final Source source = new StreamSource(in);
             source.setSystemId(inputFile.toURI().toString());
@@ -85,11 +94,12 @@ final class MoveLinksModule extends AbstractPipelineModuleImpl {
             linkInserter.setLogger(logger);
             linkInserter.setJob(job);
             for (final Map.Entry<File, Map<String, Element>> entry: mapSet.entrySet()) {
-                final File f = new File(job.tempDir, entry.getKey().getPath());
-                logger.info("Processing " + f);
+                final URI uri = inputFile.toURI().resolve(toURI(entry.getKey().getPath()));
+                logger.info("Processing " + uri);
                 linkInserter.setLinks(entry.getValue());
+                linkInserter.setCurrentFile(uri);
                 try {
-                    linkInserter.write(f);
+                    linkInserter.write(new File(uri));
                 } catch (final DITAOTException e) {
                     logger.error("Failed to insert links: " + e.getMessage(), e);
                 }
@@ -111,16 +121,8 @@ final class MoveLinksModule extends AbstractPipelineModuleImpl {
                 if (fragment == null) {
                     fragment = SHARP;
                 }
-                Map<String, Element> m = map.get(path);
-                if (m == null) {
-                    m = new HashMap<>();
-                    map.put(path, m);
-                }
-                Element stub = m.get(fragment);
-                if (stub == null) {
-                    stub = doc.createElement("stub");
-                    m.put(fragment, stub);
-                }
+                Map<String, Element> m = map.computeIfAbsent(path, k -> new HashMap<>());
+                Element stub = m.computeIfAbsent(fragment, k -> doc.createElement("stub"));
                 Node c = maplink.getFirstChild();
                 while (c != null) {
                     final Node nextSibling = c.getNextSibling();

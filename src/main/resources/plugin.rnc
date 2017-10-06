@@ -1,3 +1,8 @@
+# This file is part of the DITA Open Toolkit project.
+#
+# Copyright 2014 Jarno Elovirta
+#
+# See the accompanying LICENSE file for applicable license.
 plugin =
   element plugin {
     attribute id { xsd:NCName },
@@ -35,11 +40,11 @@ param =
   }
 param.val |=
   attribute type { "enum" },
-  val+
+  val*
 param.val |=
   attribute type { "string" },
   val*
-param.val |= attribute type { "file" | "dir" }
+param.val |= attribute type { "file" | "dir" | "uri" }
 val =
   element val {
     attribute desc { text }?,

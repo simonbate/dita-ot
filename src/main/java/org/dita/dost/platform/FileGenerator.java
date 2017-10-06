@@ -1,25 +1,30 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005, 2006 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005, 2006 All Rights Reserved.
  */
 package org.dita.dost.platform;
 
 import static java.util.Arrays.*;
-import java.io.File;
+
+import java.io.*;
 import java.util.*;
 
-import org.dita.dost.log.DITAOTJavaLogger;
 import org.dita.dost.log.DITAOTLogger;
-import org.dita.dost.util.XMLUtils;
 import org.dita.dost.util.XMLUtils.AttributesBuilder;
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLFilter;
+import org.xml.sax.*;
 import org.xml.sax.helpers.XMLFilterImpl;
+import org.xml.sax.helpers.XMLReaderFactory;
+
+import javax.xml.transform.Result;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.sax.SAXSource;
+import javax.xml.transform.stream.StreamResult;
 
 /**
  * Generate outputfile with templates.
@@ -74,18 +79,25 @@ final class FileGenerator extends XMLFilterImpl {
      * Generator the output file.
      * @param fileName filename
      */
-    public void generate(final File fileName){
-        if (logger == null) {
-            logger = new DITAOTJavaLogger();
-        }
+    public void generate(final File fileName) {
         final File outputFile = removeTemplatePrefix(fileName);
         templateFile = fileName;
 
-        try{
-            final List<XMLFilter> filters = Collections.singletonList((XMLFilter) this);
-            XMLUtils.transform(fileName, outputFile, filters);
-        } catch (final Exception e){
-            logger.error(e.getMessage(), e) ;
+        try (final InputStream in = new BufferedInputStream(new FileInputStream(fileName));
+             final OutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+            final Transformer transformer = TransformerFactory.newInstance().newTransformer();
+            XMLReader reader = XMLReaderFactory.createXMLReader();
+            this.setContentHandler(null);
+            this.setParent(reader);
+            reader = this;
+            final Source source = new SAXSource(reader, new InputSource(in));
+            source.setSystemId(fileName.toURI().toString());
+            final Result result = new StreamResult(out);
+            transformer.transform(source, result);
+        } catch (final RuntimeException e) {
+            throw e;
+        } catch (final Exception e) {
+            logger.error("Failed to transform " + fileName + ": " + e.getMessage(), e);
         }
     }
 

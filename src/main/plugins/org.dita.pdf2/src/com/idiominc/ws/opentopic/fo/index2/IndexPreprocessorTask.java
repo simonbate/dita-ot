@@ -8,6 +8,7 @@ import org.apache.tools.ant.Task;
 import org.apache.tools.ant.Project;
 import org.apache.xml.resolver.tools.CatalogResolver;
 import org.dita.dost.log.DITAOTAntLogger;
+import org.dita.dost.util.XMLUtils;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
@@ -49,11 +50,11 @@ licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
 This file is part of the DITA Open Toolkit project.
-See the accompanying license.txt file for applicable licenses.
+See the accompanying LICENSE file for applicable license.
  */
 public class IndexPreprocessorTask
 extends Task {
-    //	private String input = null;
+    //    private String input = null;
     private String input = "";
     private String output = "";
     private String catalogs = null;
@@ -76,8 +77,7 @@ extends Task {
         }
 
         try {
-            final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-            final DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+            final DocumentBuilder documentBuilder = XMLUtils.getDocumentBuilder();
             documentBuilder.setEntityResolver(new CatalogResolver() {
                 @Override
                 public InputSource resolveEntity(final String publicId, String systemId) {

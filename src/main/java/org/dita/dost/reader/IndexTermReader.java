@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005, 2006 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005, 2006 All Rights Reserved.
  */
 package org.dita.dost.reader;
 
@@ -89,18 +89,18 @@ public final class IndexTermReader extends AbstractXMLReader {
 
     public IndexTermReader(final IndexTermCollection result) {
         termStack = new Stack<>();
-		topicIdStack = new Stack<>();
-		indexTermSpecList = new ArrayList<>(16);
-		indexSeeSpecList = new ArrayList<>(16);
-		indexSeeAlsoSpecList = new ArrayList<>(16);
-		indexSortAsSpecList = new ArrayList<>(16);
-		topicSpecList = new ArrayList<>(16);
-		titleSpecList = new ArrayList<>(16);
-		indexTermList = new ArrayList<>(256);
-		titleMap = new HashMap<>(256);
-		processRoleStack = new Stack<>();
-		processRoleLevel = 0;
-		this.result = result != null ? result : IndexTermCollection.getInstantce();
+        topicIdStack = new Stack<>();
+        indexTermSpecList = new ArrayList<>(16);
+        indexSeeSpecList = new ArrayList<>(16);
+        indexSeeAlsoSpecList = new ArrayList<>(16);
+        indexSortAsSpecList = new ArrayList<>(16);
+        topicSpecList = new ArrayList<>(16);
+        titleSpecList = new ArrayList<>(16);
+        indexTermList = new ArrayList<>(256);
+        titleMap = new HashMap<>(256);
+        processRoleStack = new Stack<>();
+        processRoleLevel = 0;
+        this.result = result;
     }
 
     /**
@@ -155,7 +155,6 @@ public final class IndexTermReader extends AbstractXMLReader {
 
     @Override
     public void endDocument() throws SAXException {
-        final int size = indexTermList.size();
         updateIndexTermTargetName();
         for (final IndexTerm indexterm : indexTermList) {
             //IndexTermCollection.getInstantce().addTerm(indexterm);
@@ -189,7 +188,7 @@ public final class IndexTermReader extends AbstractXMLReader {
                     return;
                 } else{
                     term.setTermName("***");
-                    logger.warn(MessageUtils.getInstance().getMessage("DOTJ014W").toString());
+                    logger.warn(MessageUtils.getMessage("DOTJ014W").toString());
                 }
             }
 
@@ -403,9 +402,6 @@ public final class IndexTermReader extends AbstractXMLReader {
 
     /**
      * Note: <index-see-also> should be handled before <index-see>.
-     * 
-     * @param localName
-     * @param classAttr
      */
     private void handleSpecialization(final String localName, final String classAttr) {
         if (classAttr == null) {
@@ -461,7 +457,6 @@ public final class IndexTermReader extends AbstractXMLReader {
      *
      */
     private void updateIndexTermTargetName(){
-        final int size = indexTermList.size();
         if(defaultTitle == null){
             defaultTitle = targetFile;
         }
@@ -472,7 +467,6 @@ public final class IndexTermReader extends AbstractXMLReader {
 
     /**
      * Update the target name of each IndexTerm, recursively.
-     * @param indexterm
      */
     private void updateIndexTermTargetName(final IndexTerm indexterm){
         final int targetSize = indexterm.getTargetList().size();
@@ -502,8 +496,6 @@ public final class IndexTermReader extends AbstractXMLReader {
      * Trim whitespace from start of the string. If last character of termName and
      * first character of temp is a space character, remove leading string from temp 
      * 
-     * @param temp
-     * @param termName
      * @return trimmed temp value
      */
     private static String trimSpaceAtStart(final String temp, final String termName) {

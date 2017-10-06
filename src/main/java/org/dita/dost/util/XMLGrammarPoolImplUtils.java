@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005, 2006 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005, 2006 All Rights Reserved.
  */
 package org.dita.dost.util;
 
@@ -65,8 +65,8 @@ public final class XMLGrammarPoolImplUtils extends XMLGrammarPoolImpl {
         if (desc instanceof XSDDescription) {
 //            final String systemId = ((XSDDescription) desc).getLiteralSystemId();
 //            return systemId == null ? 0 : systemId.hashCode();
-        	// return -1 for XSD grammar hashcode because we want to disable XSD grammar caching
-        	return -1;
+            // return -1 for XSD grammar hashcode because we want to disable XSD grammar caching
+            return -1;
         } else {
             return desc.hashCode();
         }

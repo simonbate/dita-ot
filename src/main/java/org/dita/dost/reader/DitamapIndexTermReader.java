@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005 All Rights Reserved.
  */
 
 package org.dita.dost.reader;
@@ -60,12 +60,12 @@ public final class DitamapIndexTermReader extends AbstractXMLReader {
 
     public DitamapIndexTermReader(final IndexTermCollection result, final boolean indexMoved) {
         super();
-		elementStack = new Stack<>();
-		indexTermSpecList = new ArrayList<>(16);
-		topicrefSpecList = new ArrayList<>(16);
-		indexSeeSpecList = new ArrayList<>(16);
-		indexSeeAlsoSpecList = new ArrayList<>(16);
-		this.result = result != null ? result : IndexTermCollection.getInstantce();
+        elementStack = new Stack<>();
+        indexTermSpecList = new ArrayList<>(16);
+        topicrefSpecList = new ArrayList<>(16);
+        indexSeeSpecList = new ArrayList<>(16);
+        indexSeeAlsoSpecList = new ArrayList<>(16);
+        this.result = result;
         this.indexMoved = indexMoved;
     }
 
@@ -78,10 +78,6 @@ public final class DitamapIndexTermReader extends AbstractXMLReader {
         if (ch[start] == '\n' || temp.startsWith(LINE_SEPARATOR)) {
             temp = " " + temp.substring(1);
         }
-
-        //		if (temp.length() == 0) {
-        //			return;
-        //		}
 
         //used for store the space
         final char[] chars = temp.toCharArray();
@@ -139,7 +135,7 @@ public final class DitamapIndexTermReader extends AbstractXMLReader {
                     return;
                 }else{
                     indexTerm.setTermName("***");
-                    logger.warn(MessageUtils.getInstance().getMessage("DOTJ014W").toString());
+                    logger.warn(MessageUtils.getMessage("DOTJ014W").toString());
                 }
             }
 
@@ -345,10 +341,6 @@ public final class DitamapIndexTermReader extends AbstractXMLReader {
 
 
         if (elementStack.peek() instanceof TopicrefElement) {
-            //			if (!FileUtils.isHTMLFile(((TopicrefElement) elementStack.peek()).getHref())){ //Eric
-            //				return false;
-            //			}
-            //			return ((TopicrefElement) elementStack.peek()).needExtractTerm();
             // for dita files the indexterm has been moved to its <prolog>
             // therefore we don't need to collect these terms again.
             final TopicrefElement elem = (TopicrefElement) elementStack.peek();

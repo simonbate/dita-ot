@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005 All Rights Reserved.
  */
 package org.dita.dost.util;
 
@@ -12,12 +12,8 @@ import static org.apache.commons.io.FilenameUtils.*;
 import static org.dita.dost.util.Constants.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.util.*;
-
-import org.dita.dost.log.DITAOTJavaLogger;
-
 
 /**
  * Static file utilities.
@@ -32,8 +28,6 @@ public final class FileUtils {
     private FileUtils(){
     }
 
-    private static final DITAOTJavaLogger logger = new DITAOTJavaLogger();
-
     /**
      * Supported image extensions. File extensions contain a leading dot.
      */
@@ -45,7 +39,7 @@ public final class FileUtils {
         if (imageExtensions != null && imageExtensions.length()>0) {
             Collections.addAll(sie, imageExtensions.split(CONF_LIST_SEPARATOR));
         } else {
-            logger.error("Failed to read supported image extensions from configuration, using defaults.");
+            System.err.println("Failed to read supported image extensions from configuration, using defaults.");
             sie.add(FILE_EXTENSION_JPG);
             sie.add(FILE_EXTENSION_GIF);
             sie.add(FILE_EXTENSION_EPS);
@@ -69,7 +63,7 @@ public final class FileUtils {
         if (extensions != null && extensions.length()>0) {
             Collections.addAll(she, extensions.split(CONF_LIST_SEPARATOR));
         } else {
-            logger.error("Failed to read supported HTML extensions from configuration, using defaults.");
+            System.err.println("Failed to read supported HTML extensions from configuration, using defaults.");
             she.add(FILE_EXTENSION_HTML);
             she.add(FILE_EXTENSION_HTM);
         }
@@ -87,7 +81,7 @@ public final class FileUtils {
         if (extensions != null && extensions.length()>0) {
             Collections.addAll(sre, extensions.split(CONF_LIST_SEPARATOR));
         } else {
-            logger.error("Failed to read supported resource file extensions from configuration, using defaults.");
+            System.err.println("Failed to read supported resource file extensions from configuration, using defaults.");
             sre.add(FILE_EXTENSION_SWF);
             sre.add(FILE_EXTENSION_PDF);
         }
@@ -169,22 +163,13 @@ public final class FileUtils {
      * 
      * @param basePath base path
      * @param refPath reference path
-     * @return relative path using {@link Constants#UNIX_SEPARATOR} path separator
-     */
-    @Deprecated
-    public static String getRelativeUnixPath(final File basePath, final String refPath) {
-        return getRelativePath(basePath.getPath(), refPath, UNIX_SEPARATOR);
-    }
-    
-    /**
-     * Resolves a path reference against a base path.
-     * 
-     * @param basePath base path
-     * @param refPath reference path
-     * @return relative path
+     * @return relative path, or refPath if different root means no relative path is possible
      */
     public static File getRelativePath(final File basePath, final File refPath) {
-        return new File(getRelativePath(basePath.getPath(), refPath.getPath(), File.separator));
+        if (!basePath.toPath().getRoot().equals(refPath.toPath().getRoot())) {
+            return refPath;
+        }
+        return basePath.toPath().getParent().relativize(refPath.toPath()).toFile();
     }
     
     /**
@@ -555,8 +540,7 @@ public final class FileUtils {
     public static String getFullPathNoEndSeparator(final String aURLString) {
         final int pathnameStartIndex = aURLString.indexOf(UNIX_SEPARATOR);
         final int pathnameEndIndex = aURLString.lastIndexOf(UNIX_SEPARATOR);
-        String aPath = aURLString.substring(pathnameStartIndex, pathnameEndIndex);
-        aPath = aURLString.substring(0, pathnameEndIndex);
+        String aPath = aURLString.substring(0, pathnameEndIndex);
         return aPath;
     }
     
@@ -601,61 +585,6 @@ public final class FileUtils {
     }
 
     /**
-     * Retrieve the topic ID from the path
-     * 
-     * @param relativePath
-     * @return topic ID, may be {@code null}
-     */
-    @Deprecated
-    public static String getTopicID(final String relativePath) {
-        final String fragment = getFragment(relativePath);
-        if (fragment != null) {
-            final String id = fragment.lastIndexOf(SLASH) != -1
-                              ? fragment.substring(0, fragment.lastIndexOf(SLASH))
-                              : fragment;
-            return id.isEmpty() ? null : id;
-        }
-        return null;
-    }
-    
-    /**
-     * Retrieve the element ID from the path
-     * 
-     * @param relativePath
-     * @return element ID, may be {@code null}
-     */
-    @Deprecated
-    public static String getElementID(final String relativePath) {
-        final String fragment = getFragment(relativePath);
-        if (fragment != null) {
-            if (fragment.lastIndexOf(SLASH) != -1) {
-                final String id = fragment.substring(fragment.lastIndexOf(SLASH) + 1);
-                return id.isEmpty() ? null : id;
-            }
-        }
-        return null;
-    }
-    
-    /**
-     * Set the element ID from the path
-     * 
-     * @param relativePath
-     * @param id element ID
-     * @return element ID, may be {@code null}
-     */
-    @Deprecated
-    public static String setElementID(final String relativePath, final String id) {
-        String topic = getTopicID(relativePath);
-        if (topic != null) {
-            return setFragment(relativePath, topic + (id != null ? SLASH + id : ""));
-        } else if (id == null) {
-            return stripFragment(relativePath);
-        } else {
-            throw new IllegalArgumentException(relativePath);
-        }
-    }
-    
-    /**
      * Get fragment part from path or return default fragment.
      * 
      * @param path path
@@ -678,7 +607,6 @@ public final class FileUtils {
      * @param directory the file to consider as the parent
      * @param child the file to consider as the child
      * @return true is the candidate leaf is under by the specified composite, otherwise false
-     * @throws IOException
      */
     public static boolean directoryContains(final File directory, final File child) {
         final File d = new File(normalize(directory.getAbsolutePath()));

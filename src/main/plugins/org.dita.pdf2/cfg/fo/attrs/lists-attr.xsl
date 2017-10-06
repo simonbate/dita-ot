@@ -27,18 +27,13 @@ These terms and conditions supersede the terms and conditions in any
 licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
-This file is part of the DITA Open Toolkit project hosted on Sourceforge.net. 
-See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project.
+See the accompanying LICENSE file for applicable license.
 -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:fo="http://www.w3.org/1999/XSL/Format"
     version="2.0">
-
-    <xsl:attribute-set name="linklist.title">
-        <xsl:attribute name="font-weight">bold</xsl:attribute>
-        <xsl:attribute name="keep-with-next.within-column">always</xsl:attribute>
-    </xsl:attribute-set>
 
     <!--Common-->
     <xsl:attribute-set name="li.itemgroup">
@@ -61,7 +56,6 @@ See the accompanying license.txt file for applicable licenses.
 
     <xsl:attribute-set name="ul.li__label">
         <xsl:attribute name="keep-together.within-line">always</xsl:attribute>
-        <xsl:attribute name="keep-with-next.within-line">always</xsl:attribute>
         <xsl:attribute name="end-indent">label-end()</xsl:attribute>
     </xsl:attribute-set>
 
@@ -91,7 +85,6 @@ See the accompanying license.txt file for applicable licenses.
 
     <xsl:attribute-set name="ol.li__label">
         <xsl:attribute name="keep-together.within-line">always</xsl:attribute>
-        <xsl:attribute name="keep-with-next.within-line">always</xsl:attribute>
         <xsl:attribute name="end-indent">label-end()</xsl:attribute>
     </xsl:attribute-set>
 
@@ -120,7 +113,6 @@ See the accompanying license.txt file for applicable licenses.
 
     <xsl:attribute-set name="sl.sli__label">
         <xsl:attribute name="keep-together.within-line">always</xsl:attribute>
-        <xsl:attribute name="keep-with-next.within-line">always</xsl:attribute>
         <xsl:attribute name="end-indent">label-end()</xsl:attribute>
     </xsl:attribute-set>
 

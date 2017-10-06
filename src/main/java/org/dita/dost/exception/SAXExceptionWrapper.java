@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2007 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2007 All Rights Reserved.
  */
 package org.dita.dost.exception;
 
@@ -22,7 +22,7 @@ public final class SAXExceptionWrapper extends SAXParseException {
 
     /** Generated serial id. */
     private static final long serialVersionUID = -8266265000662519966L;
-    /** Message & location. */
+    /** Message &amp; location. */
     String messageWithLocation;
     /** SAX parse exception. */
     private SAXParseException saxParseException;
@@ -34,7 +34,9 @@ public final class SAXExceptionWrapper extends SAXParseException {
      * 
      * @param message message
      * @param locator locator
+     * @deprecated since 2.3
      */
+    @Deprecated
     public SAXExceptionWrapper(final String message, final Locator locator) {
         super(message, locator);
     }
@@ -45,7 +47,9 @@ public final class SAXExceptionWrapper extends SAXParseException {
      * @param message message
      * @param locator locator
      * @param e Exception
+     * @deprecated since 2.3
      */
+    @Deprecated
     public SAXExceptionWrapper(final String message, final Locator locator, final Exception e) {
         super(message, locator, e);
     }
@@ -58,7 +62,9 @@ public final class SAXExceptionWrapper extends SAXParseException {
      * @param systemId systemId
      * @param lineNumber lineNumber
      * @param columnNumber columnNumber
+     * @deprecated since 2.3
      */
+    @Deprecated
     public SAXExceptionWrapper(final String message, final String publicId,
             final String systemId, final int lineNumber, final int columnNumber) {
         super(message, publicId, systemId, lineNumber, columnNumber);
@@ -73,7 +79,9 @@ public final class SAXExceptionWrapper extends SAXParseException {
      * @param lineNumber lineNumber
      * @param columnNumber columnNumber
      * @param e Exception
+     * @deprecated since 2.3
      */
+    @Deprecated
     public SAXExceptionWrapper(final String message, final String publicId,
             final String systemId, final int lineNumber, final int columnNumber, final Exception e) {
         super(message, publicId, systemId, lineNumber, columnNumber, e);

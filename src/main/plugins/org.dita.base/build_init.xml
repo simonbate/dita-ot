@@ -1,34 +1,17 @@
 <?xml version="1.0"?>
-<!-- This file is part of the DITA Open Toolkit project hosted on 
-     Sourceforge.net. See the accompanying license.txt file for 
-     applicable licenses.-->
-<!-- (c) Copyright IBM Corp. 2006 All Rights Reserved. -->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2006 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 <project name="ditaot-init">
     
-	<!-- Default maximum memory to give to forked Java processes.
-	
-	     Set this higher either in another Ant script or on the
-	     Ant command line using the -D parameter, e.g.:
-	     
-	     ant -DmaxJavaMemory=4G
-	     
-	     Memory values are integers followed by "M" for megabytes,
-	     "G" for gigabytes.
-	     
-	     On 32-bit systems, the largest memory setting will be somewhere
-	     between 1500M and 2000M depending on your system.
-	     
-	     64-bit JVMs can use essentially unlimited memory.
-	     
-	     For memory-intensive process (very large maps), 
-	     2 or 3 gigabytes should be more than sufficient. 
-	     
-	     This value is used in the @maxmemory attribute the of the Ant
-	     <java> task.
-	  -->
-	<property name="maxJavaMemory" value="500m"/>
-  
   <!-- Read configuration properties -->
+  <loadproperties>
+    <javaresource name="application.properties"/>
+  </loadproperties>
   <property file="${dita.dir}/lib/org.dita.dost.platform/plugin.properties"/>
   <property file="${dita.dir}/lib/configuration.properties"/>
   
@@ -36,97 +19,17 @@
     <catalogpath path="${dita.plugin.org.dita.base.dir}/catalog-dita.xml"/>
   </xmlcatalog>
 
-	<!-- Determine the Java architecture and set the JVM arguments
-	     appropriately.
-	     
-	     Note that the Java architecture is determined by how the
-	     JVM is started, so it is possible for the base Ant
-	     JVM to have been started in 32-bit mode on a 64-bit machine.
-	     
-	     The is64bit and is32bit properties are mutually exclusive.
-	     
-	  -->
-	<condition property="is64bit">
-		<!-- NOTE: The following is not a complete list but should cover
-		           most of the systems Open Toolkit users are likely
-		           to use. Add more values as they become known.
-		-->
-	  <and>
-  		<or>
-  			<os arch="x86_64"/>
-  			<os arch="amd64"/>
-  			<os arch="ppc64"/>
-  		</or>
-	    <not>
-	      <os family="windows"/>
-	    </not>
-	  </and>
-  </condition>
-	
-	<condition property="is32bit">
-		<isfalse value="${is64bit}"/>
-  </condition>
-	
-	<!-- For 64-bit machines, the value -d64 runs the
-	     the JVM in 64-bit mode. This parameter cannot
-	     be specified on 32-bit machines (that is, you cannot
-	     specify -d32 on a 32-bit machine, you get an "unrecognized
-	     option error in that case).
-	  -->
-	<condition property="jvmArchFlag"
-	  value="-d64"
-	  else="">
-		<istrue value="${is64bit}"/>
-	</condition>
-
-	<!-- Base JVM argument line to use with any forked Java processes.
-	
-	     Sets the JVM architecture.
-	     
-	     Use like so:
-	     
-	     <java ...>
-	       <jvmarg line="${baseJVMArgLine}"/>
-	       ...
-	     </java>
-	  -->
-	<property name="baseJVMArgLine" value="${jvmArchFlag} -Xmx${maxJavaMemory}"/>
-
   <!-- Deprecated -->
   <path id="dost.jar.path" refid="dost.class.path"/>
 
-  <taskdef name="pipeline"
-    classname="org.dita.dost.invoker.ExtensibleAntInvoker">
-    <classpath refid="dost.class.path" />
-  </taskdef>
-
-  <taskdef name="dita-ot-echo"
-    classname="org.dita.dost.log.DITAOTEchoTask">
-    <classpath refid="dost.class.path" />
-  </taskdef>
-
-  <taskdef name="dita-ot-fail"
-    classname="org.dita.dost.log.DITAOTFailTask">
-    <classpath refid="dost.class.path" />
-  </taskdef>
-
-  <taskdef name="dita-ot-copy"
-    classname="org.dita.dost.util.DITAOTCopy">
-    <classpath refid="dost.class.path" />
-  </taskdef>
-	
-  <taskdef name="job-property" classname="org.dita.dost.platform.JobPropertyTask">
-    <classpath refid="dost.class.path"/>
-  </taskdef>
-	
-  <typedef name="isabsolute"
-    classname="org.dita.dost.util.IsAbsolute">
-    <classpath refid="dost.class.path" />
-  </typedef>
-  
-  <typedef name="dita-fileset" classname="org.dita.dost.util.JobSourceSet">
-    <classpath refid="dost.class.path" />
-  </typedef>
+  <taskdef name="pipeline" classname="org.dita.dost.ant.ExtensibleAntInvoker"/>
+  <taskdef name="dita-ot-echo" classname="org.dita.dost.ant.DITAOTEchoTask"/>
+  <taskdef name="dita-ot-fail" classname="org.dita.dost.ant.DITAOTFailTask"/>
+  <taskdef name="dita-ot-copy" classname="org.dita.dost.ant.DITAOTCopy"/>
+  <taskdef name="job-property" classname="org.dita.dost.ant.JobPropertyTask"/>
+  <typedef name="isabsolute" classname="org.dita.dost.ant.IsAbsolute"/>
+  <typedef name="dita-fileset" classname="org.dita.dost.ant.types.JobSourceSet"/>
+  <typedef name="job-mapper" classname="org.dita.dost.ant.types.JobMapper"/>
 
   <macrodef name="job-helper" >
     <attribute name="file"/>
@@ -140,19 +43,32 @@
       </xslt>
     </sequential>
   </macrodef>
-  
-  <tstamp>
-    <format property="current.date" pattern="yyyyMMddHHmmssSSS"/>
-  </tstamp>
-  <property name="base.temp.dir" location="${basedir}/temp"/>
-  <property name="dita.temp.dir" location="${base.temp.dir}${file.separator}temp${current.date}" />
-  <property name="output.dir" location="${basedir}/out" />
-  <property environment="env" />
-  <!-- property values end -->
 
   <target name="build-init"
-          depends="check-arg,
-                   log-arg" />
+          depends="init-properties,
+                   check-arg,
+                   log-arg"/>
+
+  <target name="init-properties">
+    <property name="default.language" value="en"/>
+    <property name="generate-debug-attributes" value="true"/>
+    <property name="processing-mode" value="lax"/>
+    <tstamp>
+      <format property="current.date" pattern="yyyyMMddHHmmssSSS"/>
+    </tstamp>
+    <property name="base.temp.dir" location="${basedir}/temp"/>
+    <property name="dita.temp.dir" location="${base.temp.dir}${file.separator}temp${current.date}" />
+    <fail message="dita.temp.dir property must be an absolute path: ${dita.temp.dir}">
+      <condition>
+        <not><isabsolute path="${dita.temp.dir}"/></not>
+      </condition>
+    </fail>
+    <property name="output.dir" location="${basedir}/out" />
+    <condition property="dita.output.dir" value="${dita.temp.dir}${file.separator}${temp.output.dir.name}" else="${output.dir}">
+      <isset property="temp.output.dir.name"/>
+    </condition>
+    <property environment="env" />
+  </target>
 
   <!-- property value validation begin -->
   <target name="check-arg"
@@ -172,31 +88,7 @@
     <!-- end to check input parameters -->
 
     <!-- begin to init required parameters -->
-
-    <dita-ot-fail id="DOTA012W">
-      <condition>
-        <isset property="dita.input.valfile" />
-      </condition>
-      <param name="1" value="dita.input.valfile"/>
-      <param name="2" value="args.filter"/>
-    </dita-ot-fail>
-    <condition property="dita.input.valfile" value="${args.filter}">
-      <and>
-        <isset property="args.filter"/>
-        <not><isset property="dita.input.valfile"/></not>
-      </and>
-    </condition>
-    <dita-ot-fail id="DOTA013F">
-      <condition>
-        <and>
-          <isset property="args.filter" />
-          <not>
-            <available file="${args.filter}" type="file" />
-          </not>
-        </and>
-      </condition>
-      <param name="1" location="${args.filter}"/>
-    </dita-ot-fail>
+    
     <condition property="filter-stage" value="early">
       <not>
         <isset property="filter-stage"/>
@@ -223,20 +115,20 @@
         <contains string="${args.outext}" substring="." />
       </and>
     </condition>
-  	
-  	<condition property="args.grammar.cache"
-  	      value="yes">
-  		      <not>
-  		        <isset property="args.grammar.cache" />
-  		      </not>
-  	</condition> 	
-  	
-  	<condition property="args.xml.systemid.set"
-  	      value="yes">
-  		      <not>
-  		        <isset property="args.xml.systemid.set" />
-  		      </not>
-  	</condition>
+
+    <condition property="args.grammar.cache"
+          value="yes">
+            <not>
+              <isset property="args.grammar.cache" />
+            </not>
+    </condition>
+
+    <condition property="args.xml.systemid.set"
+          value="yes">
+            <not>
+              <isset property="args.xml.systemid.set" />
+            </not>
+    </condition>
     <!-- end to init required parameters -->
 
     <!-- create required directories -->
@@ -249,13 +141,13 @@
         <isset property="args.logdir" />
       </not>
     </condition>
-  	
-  	<!-- Validate the xml file or not,default is validation(true)-->
-  	<condition property="validate" value="true">
-  	   <not>
-  		 <isset property="validate" />
-  	   </not>
-  	</condition>
+
+    <!-- Validate the xml file or not,default is validation(true)-->
+    <condition property="validate" value="true">
+       <not>
+       <isset property="validate" />
+       </not>
+    </condition>
     
     <!-- Related links to output: none, all, nofamily -->
     <condition property="include.rellinks" value="">
@@ -276,37 +168,37 @@
         <not><isset property="args.rellinks"/></not>
       </or>
     </condition>
-  	
-  	<!--solution for the output control-->
-  	<condition property="generate.copy.outer" value="1">
-  	   <not>
-  		 <isset property="generate.copy.outer" />
-  	   </not>
-  	</condition>
-  	
-  	<condition property="onlytopic.in.map" value="false">
-  	   <not>
-  		 <isset property="onlytopic.in.map" />
-  	   </not>
-	</condition>
-  	<!--
-  	default value : warn
-	fail     :1a) Fail quickly if files are going to be generated/copied outside of that directory
-	warn  :1b) Complete if files will be generated/copied outside, but log a warning
-	quiet  :1c) Quietly finish with only those files (no warning or error)
-  	-->
-  	<condition property="outer.control" value="warn">
-  	   <not>
-  		 <isset property="outer.control" />
-  	   </not>
-  	</condition>
-  	
+
+    <!--solution for the output control-->
+    <condition property="generate.copy.outer" value="1">
+       <not>
+       <isset property="generate.copy.outer" />
+       </not>
+    </condition>
+
+    <condition property="onlytopic.in.map" value="false">
+       <not>
+       <isset property="onlytopic.in.map" />
+       </not>
+  </condition>
+    <!--
+    default value : warn
+  fail     :1a) Fail quickly if files are going to be generated/copied outside of that directory
+  warn  :1b) Complete if files will be generated/copied outside, but log a warning
+  quiet  :1c) Quietly finish with only those files (no warning or error)
+    -->
+    <condition property="outer.control" value="warn">
+       <not>
+       <isset property="outer.control" />
+       </not>
+    </condition>
+
     <condition property="inner.transform">
-	 	   <equals arg1="${generate.copy.outer}" arg2="1"/>
-  	</condition>
-  	
-  	<condition property="old.transform">
-    	<equals arg1="${generate.copy.outer}" arg2="3"></equals>
+        <equals arg1="${generate.copy.outer}" arg2="1"/>
+    </condition>
+
+    <condition property="old.transform">
+      <equals arg1="${generate.copy.outer}" arg2="3"></equals>
     </condition>
     
     <condition property="conserve-memory" value="false">
@@ -362,8 +254,8 @@
     <echo level="info">* XSLT processor = ${xslt.parser}</echo>
     <echo level="info">* collator = ${collator}</echo>
     <echo level="info">*****************************************************************</echo>
-  	<echoproperties regex="^(arg|preprocess|dita)" taskname="echo" failonerror="false"/>
-  	<echo level="info">*****************************************************************</echo>
+    <echoproperties regex="^(arg|preprocess|dita)" taskname="echo" failonerror="false"/>
+    <echo level="info">*****************************************************************</echo>
   </target>
 
 </project>

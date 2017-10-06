@@ -27,8 +27,8 @@ These terms and conditions supersede the terms and conditions in any
 licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
-This file is part of the DITA Open Toolkit project hosted on Sourceforge.net. 
-See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project.
+See the accompanying LICENSE file for applicable license.
 -->
 
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -55,6 +55,7 @@ See the accompanying license.txt file for applicable licenses.
             <xsl:call-template name="commonattributes"/>
             <xsl:call-template name="setFrame"/>
             <xsl:call-template name="setScale"/>
+            <xsl:call-template name="setExpanse"/>
             <xsl:variable name="codeblock.line-number" as="xs:boolean">
               <xsl:apply-templates select="." mode="codeblock.generate-line-number"/>
             </xsl:variable>
@@ -292,7 +293,7 @@ See the accompanying license.txt file for applicable licenses.
     <xsl:template match="*[contains(@class,' pr-d/syntaxdiagram ')]/*[contains(@class,' topic/title ')]">
         <fo:block xsl:use-attribute-sets="syntaxdiagram.title">
             <xsl:call-template name="commonattributes"/>
-            <xsl:value-of select="."/>
+            <xsl:apply-templates/>
         </fo:block>
     </xsl:template>
 
@@ -306,11 +307,11 @@ See the accompanying license.txt file for applicable licenses.
             <xsl:choose>
                 <xsl:when test="@importance='default'">
                     <fo:inline xsl:use-attribute-sets="kwd__default">
-                        <xsl:value-of select="."/>
+                        <xsl:apply-templates/>
                     </fo:inline>
                 </xsl:when>
                 <xsl:otherwise>
-                    <xsl:value-of select="."/>
+                    <xsl:apply-templates/>
                 </xsl:otherwise>
             </xsl:choose>
             <xsl:if test="@importance='optional'">] </xsl:if>
@@ -320,7 +321,9 @@ See the accompanying license.txt file for applicable licenses.
     <xsl:template match="*[contains(@class,' pr-d/fragref ')]">
         <fo:inline xsl:use-attribute-sets="fragref">     <!--TODO: fragref-->
             <xsl:call-template name="commonattributes"/>
-            &lt;<xsl:value-of select="."/>&gt;
+            <xsl:text>&lt;</xsl:text>
+            <xsl:apply-templates/>
+            <xsl:text>&gt;</xsl:text>
         </fo:inline>
     </xsl:template>
 
@@ -345,67 +348,12 @@ See the accompanying license.txt file for applicable licenses.
         </fo:block>
     </xsl:template>
 
-    <xsl:template match="*[contains(@class,' pr-d/groupcomp ')]/*[contains(@class,' pr-d/groupcomp ')]">
-        <fo:inline>
-          <xsl:call-template name="commonattributes"/>
-        </fo:inline>
-        <xsl:call-template name="makeGroup"/>
-    </xsl:template>
-
-    <xsl:template match="*[contains(@class,' pr-d/groupchoice ')]/*[contains(@class,' pr-d/groupchoice ')]">
+    <xsl:template match="*[contains(@class,' pr-d/groupcomp ') or contains(@class,' pr-d/groupchoice ') or contains(@class,' pr-d/groupseq ')]/
+        *[contains(@class,' pr-d/groupcomp ') or contains(@class,' pr-d/groupchoice ') or contains(@class,' pr-d/groupseq ')]">
         <fo:inline>
             <xsl:call-template name="commonattributes"/>
+            <xsl:call-template name="makeGroup"/>
         </fo:inline>
-        <xsl:call-template name="makeGroup"/>
-    </xsl:template>
-
-    <xsl:template match="*[contains(@class,' pr-d/groupseq ')]/*[contains(@class,' pr-d/groupseq ')]">
-        <fo:inline>
-            <xsl:call-template name="commonattributes"/>
-        </fo:inline>
-        <xsl:call-template name="makeGroup"/>
-    </xsl:template>
-
-    <xsl:template match="*[contains(@class,' pr-d/groupchoice ')]/*[contains(@class,' pr-d/groupcomp ')]">
-        <fo:inline>
-            <xsl:call-template name="commonattributes"/>
-        </fo:inline>
-        <xsl:call-template name="makeGroup"/>
-    </xsl:template>
-
-    <xsl:template match="*[contains(@class,' pr-d/groupchoice ')]/*[contains(@class,' pr-d/groupseq ')]">
-        <fo:inline>
-            <xsl:call-template name="commonattributes"/>
-        </fo:inline>
-        <xsl:call-template name="makeGroup"/>
-    </xsl:template>
-
-    <xsl:template match="*[contains(@class,' pr-d/groupcomp ')]/*[contains(@class,' pr-d/groupchoice ')]">
-        <fo:inline>
-            <xsl:call-template name="commonattributes"/>
-        </fo:inline>
-        <xsl:call-template name="makeGroup"/>
-    </xsl:template>
-
-    <xsl:template match="*[contains(@class,' pr-d/groupcomp ')]/*[contains(@class,' pr-d/groupseq ')]">
-        <fo:inline>
-            <xsl:call-template name="commonattributes"/>
-        </fo:inline>
-        <xsl:call-template name="makeGroup"/>
-    </xsl:template>
-
-    <xsl:template match="*[contains(@class,' pr-d/groupseq ')]/*[contains(@class,' pr-d/groupchoice ')]">
-        <fo:inline>
-            <xsl:call-template name="commonattributes"/>
-        </fo:inline>
-        <xsl:call-template name="makeGroup"/>
-    </xsl:template>
-
-    <xsl:template match="*[contains(@class,' pr-d/groupseq ')]/*[contains(@class,' pr-d/groupcomp ')]">
-        <fo:inline>
-            <xsl:call-template name="commonattributes"/>
-        </fo:inline>
-        <xsl:call-template name="makeGroup"/>
     </xsl:template>
 
     <xsl:template name="makeGroup">

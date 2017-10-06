@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005, 2006 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005, 2006 All Rights Reserved.
  */
 package org.dita.dost.platform;
 
@@ -48,7 +48,6 @@ abstract class ImportAction implements IAction {
     
     /**
      * get result.
-     * @return result
      */
     @Override
     public abstract void getResult(ContentHandler output) throws SAXException;

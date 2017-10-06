@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2010 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="2.0"
     xmlns:xs="http://www.w3.org/2001/XMLSchema"
     xmlns:related-links="http://dita-ot.sourceforge.net/ns/200709/related-links"
@@ -70,9 +77,9 @@
 
     <!-- Without a group, links are emitted as-is.  (Can be overridden.) -->
     <xsl:template match="*[contains(@class, ' topic/link ')]" mode="related-links:result-group"
-                  name="related-links:group-result." as="element(linklist)">
+                  name="related-links:group-result." as="element()?">
         <xsl:param name="links" as="node()*"/>
-        <xsl:if test="normalize-space(string-join($links, ''))">
+        <xsl:if test="exists($links)">
           <linklist class="- topic/linklist " outputclass="relinfo relref">
             <xsl:sequence select="$links"/>
           </linklist>
@@ -80,14 +87,14 @@
     </xsl:template>
 
     <!-- Ungrouped links have the default-mode template applied to them. (Can be overridden.) -->
-    <xsl:template match="*[contains(@class, ' topic/link ')]" mode="related-links:link" name="related-links:link."
-                  as="element(link)">
+    <xsl:template match="*[contains(@class, ' topic/link ')]" mode="related-links:link" name="related-links:link"
+                  as="element()*">
       <xsl:sequence select="."/>
     </xsl:template>
 
     <!-- Main entry point. -->
     <xsl:template match="*[contains(@class, ' topic/related-links ')]" mode="related-links:group-unordered-links"
-                  as="element(linklist)*">
+                  as="element()*">
         <!-- Node set.  The set of nodes to group. -->
         <xsl:param name="nodes" as="element()*"/>
         <!-- Sent back to all callback templates as a parameter.-->
@@ -282,7 +289,7 @@
     </xsl:template>
 
     <!-- Process each group in turn. -->
-  <xsl:template name="related-links:walk-groups" as="element(linklist)*">
+  <xsl:template name="related-links:walk-groups" as="element()*">
         <xsl:param name="nodes" as="element()*"/>
         <xsl:param name="tunnel"/>
         <!-- semicolon separate list -->
@@ -305,7 +312,7 @@
     </xsl:template>
 
     <!-- Process each group. -->
-    <xsl:template name="related-links:do-group" as="element(linklist)">
+    <xsl:template name="related-links:do-group" as="element()?">
         <xsl:param name="nodes" as="element()*"/>
         <xsl:param name="tunnel"/>
         <!-- space separated list -->

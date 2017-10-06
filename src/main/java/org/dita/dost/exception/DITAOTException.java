@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005 All Rights Reserved.
  */
 package org.dita.dost.exception;
 
@@ -73,30 +73,5 @@ public final class DITAOTException extends Exception {
         super(message, cause);
         messageBean = msgBean;
     }
-    /**
-     * Retrieve the MessageBean.
-     * 
-     * @return MessageBean
-     */
-    public MessageBean getMessageBean() {
-        return messageBean;
-    }
-    /**
-     * To check whether the current exception has already been captured before.
-     * 
-     * @return {@code true} if the exception has already solved, else {@code false}
-     */
-    public boolean alreadyCaptured() {
-        return captured;
-    }
-    /**
-     * To set the exception's status whether it is needed to solve.
-     * 
-     * @param isCaptured boolean
-     */
-    public void setCaptured(final boolean isCaptured) {
-        captured = isCaptured;
-    }
-
 
 }

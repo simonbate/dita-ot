@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2010 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2010 All Rights Reserved.
  */
 package org.dita.dost.reader;
 
@@ -14,18 +14,19 @@ import static org.dita.dost.util.URLUtils.*;
 import static org.dita.dost.util.XMLUtils.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
 import javax.xml.parsers.DocumentBuilder;
 
+import org.dita.dost.log.MessageBean;
+import org.dita.dost.log.MessageUtils;
+import org.dita.dost.util.Job;
 import org.dita.dost.util.KeyDef;
 import org.dita.dost.util.KeyScope;
 import org.dita.dost.util.XMLUtils;
 import org.w3c.dom.*;
 import org.dita.dost.log.DITAOTLogger;
-import org.xml.sax.InputSource;
 
 /**
  * KeyrefReader class which reads DITA map file to collect key definitions. Instances are reusable but not thread-safe.
@@ -38,7 +39,7 @@ public final class KeyrefReader implements AbstractReader {
             ATTRIBUTE_NAME_PLATFORM,
             ATTRIBUTE_NAME_PRODUCT,
             ATTRIBUTE_NAME_OTHERPROPS,
-            "rev",
+            ATTRIBUTE_NAME_REV,
             ATTRIBUTE_NAME_PROPS,
             "linking",
             ATTRIBUTE_NAME_TOC,
@@ -54,8 +55,10 @@ public final class KeyrefReader implements AbstractReader {
             ATTRIBUTE_NAME_CASCADE));
 
     private DITAOTLogger logger;
+    private Job job;
     private final DocumentBuilder builder;
     private KeyScope rootScope;
+    private URI currentFile;
 
     /**
      * Constructor.
@@ -73,7 +76,12 @@ public final class KeyrefReader implements AbstractReader {
     public void setLogger(final DITAOTLogger logger) {
         this.logger = logger;
     }
-    
+
+    @Override
+    public void setJob(final Job job) {
+        this.job = job;
+    }
+
     /**
      * Get key definitions for root scope. Each key definition Element has a distinct Document.
      * 
@@ -87,8 +95,10 @@ public final class KeyrefReader implements AbstractReader {
      * Read key definitions
      * 
      * @param filename absolute URI to DITA map with key definitions
+     * @param doc key definition DITA map
      */
     public void read(final URI filename, final Document doc) {
+        currentFile = filename;
         rootScope = null;
         // TODO: use KeyScope implementation that retains order
         KeyScope keyScope = readScopes(doc);
@@ -101,10 +111,10 @@ public final class KeyrefReader implements AbstractReader {
     /** Read keys scopes in map. */
     private KeyScope readScopes(final Document doc) {
         final List<KeyScope> scopes = readScopes(doc.getDocumentElement());
-        if (scopes.size() == 1) {
+        if (scopes.size() == 1 && scopes.get(0).name == null) {
             return scopes.get(0);
         } else {
-            return new KeyScope(null, Collections.<String, KeyDef>emptyMap(), scopes);
+            return new KeyScope("#root", null, Collections.emptyMap(), scopes);
         }
     }
     private List<KeyScope> readScopes(final Element root) {
@@ -114,14 +124,35 @@ public final class KeyrefReader implements AbstractReader {
         readChildScopes(root, childScopes);
         final String keyscope = root.getAttribute(ATTRIBUTE_NAME_KEYSCOPE).trim();
         if (keyscope.isEmpty()) {
-            return asList(new KeyScope(null, keyDefs, childScopes));
+            return Collections.singletonList(new KeyScope("#root", null, keyDefs, childScopes));
         } else {
             final List<KeyScope> res = new ArrayList<>();
             for (final String scope: keyscope.split("\\s+")) {
-                res.add(new KeyScope(scope, keyDefs, childScopes));
+                res.add(new KeyScope(generateId(root, scope), scope, keyDefs, childScopes));
             }
             return res;
         }
+    }
+
+    private String generateId(final Element root, final String scope) {
+        final StringBuilder res = new StringBuilder();
+        Element elem = root;
+        while (elem != null) {
+            res.append(elem.getNodeName()).append('[');
+            int position = 0;
+            for (Node n = elem; n != null; position++) {
+                n = n.getPreviousSibling();
+            }
+            res.append(Integer.toString(position)).append(']');
+            final Node p = elem.getParentNode();
+            if (p != null && p.getNodeType() == Node.ELEMENT_NODE) {
+                elem = (Element) p;
+            } else {
+                elem = null;
+            }
+        }
+        res.append('.').append(scope);
+        return res.toString();
     }
 
     private void readChildScopes(final Element elem, final List<KeyScope> childScopes) {
@@ -183,7 +214,9 @@ public final class KeyrefReader implements AbstractReader {
                     final URI href = h.isEmpty() ? null : toURI(h);
                     final String s = copy.getAttribute(ATTRIBUTE_NAME_SCOPE);
                     final String scope = s.isEmpty() ? null : s;
-                    final KeyDef keyDef = new KeyDef(key, href, scope, null, copy);
+                    final String f = copy.getAttribute(ATTRIBUTE_NAME_FORMAT);
+                    final String format = f.isEmpty() ? null : f;
+                    final KeyDef keyDef = new KeyDef(key, href, scope, format, currentFile, copy);
                     keyDefs.put(key, keyDef);
                 }
             }
@@ -194,7 +227,7 @@ public final class KeyrefReader implements AbstractReader {
     private KeyScope cascadeChildKeys(final KeyScope rootScope) {
         final Map<String, KeyDef> res = new HashMap<>(rootScope.keyDefinition);
         cascadeChildKeys(rootScope, res, "");
-        return new KeyScope(rootScope.name, res, new ArrayList<>(rootScope.childScopes.values()));
+        return new KeyScope(rootScope.id, rootScope.name, res, new ArrayList<>(rootScope.childScopes));
     }
     private void cascadeChildKeys(final KeyScope scope, final Map<String, KeyDef> keys, final String prefix) {
         final StringBuilder buf = new StringBuilder(prefix);
@@ -204,12 +237,12 @@ public final class KeyrefReader implements AbstractReader {
         final String p = buf.toString();
         for (final Map.Entry<String, KeyDef> e: scope.keyDefinition.entrySet()) {
             final KeyDef oldKeyDef = e.getValue();
-            final KeyDef newKeyDef = new KeyDef(p + oldKeyDef.keys, oldKeyDef.href, oldKeyDef.scope, oldKeyDef.source, oldKeyDef.element);
+            final KeyDef newKeyDef = new KeyDef(p + oldKeyDef.keys, oldKeyDef.href, oldKeyDef.scope, oldKeyDef.format, oldKeyDef.source, oldKeyDef.element);
             if (!keys.containsKey(newKeyDef.keys)) {
                 keys.put(newKeyDef.keys, newKeyDef);
             }
         }
-        for (final KeyScope child: scope.childScopes.values()) {
+        for (final KeyScope child: scope.childScopes) {
             cascadeChildKeys(child, keys, p);
         }
     }
@@ -217,7 +250,7 @@ public final class KeyrefReader implements AbstractReader {
 
     /** Inherit parent keys to child key scopes. */
     private KeyScope inheritParentKeys(final KeyScope rootScope) {
-        return inheritParentKeys(rootScope, Collections.<String, KeyDef>emptyMap());
+        return inheritParentKeys(rootScope, Collections.emptyMap());
     }
     private KeyScope inheritParentKeys(final KeyScope current, final Map<String, KeyDef> parent) {
         if (parent.keySet().isEmpty() && current.childScopes.isEmpty()) {
@@ -227,11 +260,11 @@ public final class KeyrefReader implements AbstractReader {
             resKeys.putAll(current.keyDefinition);
             resKeys.putAll(parent);
             final List<KeyScope> resChildren = new ArrayList<>();
-            for (final KeyScope child: current.childScopes.values()) {
+            for (final KeyScope child: current.childScopes) {
                 final KeyScope resChild = inheritParentKeys(child, resKeys);
                 resChildren.add(resChild);
             }
-            return new KeyScope(current.name, resKeys, resChildren);
+            return new KeyScope(current.id, current.name, resKeys, resChildren);
         }
     }
 
@@ -239,33 +272,54 @@ public final class KeyrefReader implements AbstractReader {
     private KeyScope resolveIntermediate(final KeyScope scope) {
         final Map<String, KeyDef> keys = new HashMap<>(scope.keyDefinition);
         for (final Map.Entry<String, KeyDef> e: scope.keyDefinition.entrySet()) {
-            final KeyDef res = resolveIntermediate(scope, e.getValue());
+            final KeyDef res = resolveIntermediate(scope, e.getValue(), Collections.singletonList(e.getValue()));
             keys.put(e.getKey(), res);
         }
         final List<KeyScope> children = new ArrayList<>();
-        for (final KeyScope child: scope.childScopes.values()) {
+        for (final KeyScope child: scope.childScopes) {
             final KeyScope resolvedChild = resolveIntermediate(child);
             children.add(resolvedChild);
         }
-        return new KeyScope(scope.name, keys, children);
+        return new KeyScope(scope.id, scope.name, keys, children);
     }
 
-    private KeyDef resolveIntermediate(final KeyScope scope, final KeyDef keyDef) {
+    private KeyDef resolveIntermediate(final KeyScope scope, final KeyDef keyDef, final List<KeyDef> circularityTracker) {
         final Element elem = keyDef.element;
         final String keyref = elem.getAttribute(ATTRIBUTE_NAME_KEYREF);
         if (!keyref.isEmpty() && scope.keyDefinition.containsKey(keyref)) {
             KeyDef keyRefDef = scope.keyDefinition.get(keyref);
+            if (circularityTracker.contains(keyRefDef)) {
+                handleCircularDefinitionException(circularityTracker);
+                return keyDef;
+            }
             Element defElem = keyRefDef.element;
             final String defElemKeyref = defElem.getAttribute(ATTRIBUTE_NAME_KEYREF);
             if (!defElemKeyref.isEmpty()) {
-                keyRefDef = resolveIntermediate(scope, keyRefDef);
+                // TODO use immutable List
+                final List<KeyDef> ct = new ArrayList<>(circularityTracker.size() + 1);
+                ct.addAll(circularityTracker);
+                ct.add(keyRefDef);
+                keyRefDef = resolveIntermediate(scope, keyRefDef, ct);
             }
             final Element res = mergeMetadata(keyRefDef.element, elem);
             res.removeAttribute(ATTRIBUTE_NAME_KEYREF);
-            return new KeyDef(keyDef.keys, keyRefDef.href, keyRefDef.scope, keyRefDef.source, res);
+            return new KeyDef(keyDef.keys, keyRefDef.href, keyRefDef.scope, keyRefDef.format, keyRefDef.source, res);
         } else {
             return keyDef;
         }
+    }
+
+    private void handleCircularDefinitionException(final List<KeyDef> circularityTracker) {
+        final StringBuilder sb = new StringBuilder();
+        Collections.reverse(circularityTracker);
+        for (final KeyDef keyDef: circularityTracker) {
+            sb.append(keyDef.keys).append(" -> ");
+        }
+        sb.append(circularityTracker.get(0).keys);
+        final MessageBean ex = MessageUtils
+                .getMessage("DOTJ069E", sb.toString())
+                .setLocation(circularityTracker.get(0).element);
+        logger.error(ex.toString(), ex.toException());
     }
 
     private Element mergeMetadata(final Element defElem, final Element elem) {

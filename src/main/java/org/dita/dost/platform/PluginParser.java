@@ -1,5 +1,13 @@
+/*
+ * This file is part of the DITA Open Toolkit project.
+ *
+ * Copyright 2015 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
+ */
 package org.dita.dost.platform;
 
+import org.dita.dost.util.XMLUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -7,8 +15,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
 
@@ -50,11 +56,7 @@ public class PluginParser {
         super();
         assert ditaDir.isAbsolute();
         this.ditaDir = ditaDir;
-        try {
-            builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-        } catch (final ParserConfigurationException e) {
-            throw new RuntimeException(e);
-        }
+        builder = XMLUtils.getDocumentBuilder();
     }
 
     /**

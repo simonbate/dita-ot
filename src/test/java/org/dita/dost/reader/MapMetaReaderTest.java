@@ -1,10 +1,13 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
+ *
+ * Copyright 2011 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
  */
 package org.dita.dost.reader;
 
-import static org.custommonkey.xmlunit.XMLAssert.assertXMLEqual;
+import static org.dita.dost.TestUtils.assertXMLEqual;
 import java.io.File;
 import java.io.IOException;
 import javax.xml.parsers.DocumentBuilder;
@@ -15,6 +18,7 @@ import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.dita.dost.util.Job;
+import org.dita.dost.util.XMLUtils;
 import org.xml.sax.InputSource;
 
 import org.apache.xml.resolver.tools.ResolvingXMLReader;
@@ -25,7 +29,6 @@ import org.apache.xml.resolver.tools.CatalogResolver;
 
 import org.xml.sax.SAXException;
 
-import org.custommonkey.xmlunit.XMLUnit;
 import org.dita.dost.TestUtils;
 import org.dita.dost.exception.DITAOTException;
 import org.dita.dost.util.CatalogUtils;
@@ -61,13 +64,8 @@ public class MapMetaReaderTest {
 
     @Test
     public void testRead() throws DITAOTException, SAXException, IOException, ParserConfigurationException{
-        final DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        final DocumentBuilder db = XMLUtils.getDocumentBuilder();
         db.setEntityResolver(CatalogUtils.getCatalogResolver());
-
-        XMLUnit.setNormalizeWhitespace(true);
-        XMLUnit.setIgnoreWhitespace(true);
-        XMLUnit.setIgnoreDiffBetweenTextAndCDATA(true);
-        XMLUnit.setIgnoreComments(true);
 
         assertXMLEqual(db.parse(new File(expDir, "test.ditamap")),
                 db.parse(new File(tempDir, "test.ditamap")));

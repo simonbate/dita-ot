@@ -1,11 +1,14 @@
 <?xml version="1.0"?>
-<!-- This file is part of the DITA Open Toolkit project hosted on 
-     Sourceforge.net. See the accompanying license.txt file for 
-     applicable licenses.-->
-<!-- (c) Copyright IBM Corp. 2006 All Rights Reserved. -->
+<!--
+This file is part of the DITA Open Toolkit project.
+
+Copyright 2006 IBM Corporation
+
+See the accompanying LICENSE file for applicable license.
+-->
 <project xmlns:dita="http://dita-ot.sourceforge.net" name="DOST" default="init">
   
-  <property file="${basedir}/local.properties"/>
+  <property file="${dita.dir}/local.properties"/>
   
   <!-- Initialize DITA-OT base directory -->
   <dirname property="ant.file.DOST.dir" file="${ant.file.DOST}" />
@@ -49,8 +52,9 @@
   </target>
   
   <dita:extension id="dita.conductor.plugin" behavior="org.dita.dost.platform.ImportPluginInfoAction"/>
+  <dita:extension id="ant.import" behavior="org.dita.dost.platform.ImportAntAction"/>
+  <dita:extension id="dita.conductor.target.relative" behavior="org.dita.dost.platform.InsertAntActionRelative"/>  
   <dita:extension id="dita.conductor.target" behavior="org.dita.dost.platform.InsertAction"/>
-  <dita:extension id="dita.conductor.target.relative" behavior="org.dita.dost.platform.InsertAntActionRelative"/>
   
   <!-- Deprecated since 2.1 -->
   <target name="help">

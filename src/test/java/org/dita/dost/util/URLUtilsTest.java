@@ -1,3 +1,10 @@
+/*
+ * This file is part of the DITA Open Toolkit project.
+ *
+ * Copyright 2012 Jarno Elovirta
+ *
+ * See the accompanying LICENSE file for applicable license.
+ */
 package org.dita.dost.util;
 
 import static org.junit.Assert.*;
@@ -66,6 +73,8 @@ public class URLUtilsTest {
         assertEquals("foo/bar.dita", URLUtils.clean("foo\\bar.dita"));
         
         assertEquals("foo?bar=baz&qux=quxx", URLUtils.clean("foo?bar=baz&qux=quxx"));
+
+        assertEquals("http://www.example.com/foo/bar", URLUtils.clean("http://www.example.com/foo/bar"));
     }
     
     @Test
@@ -112,10 +121,20 @@ public class URLUtilsTest {
     }
     
     @Test
-    public void testToUri() throws URISyntaxException {
+    public void testFileToUri() throws URISyntaxException {
         assertEquals(new URI("test.txt"), URLUtils.toURI(new File("test.txt")));
         assertEquals(new URI("foo%20bar.txt"), URLUtils.toURI(new File("foo bar.txt")));
-        assertEquals(new URI("foo/bar.txt"), URLUtils.toURI(new File("foo" + File.separator + "bar.txt")));
+        assertEquals(new URI("foo/bar.txt"), URLUtils.toURI(new File("foo" + Constants.WINDOWS_SEPARATOR + "bar.txt")));
+        assertEquals(new URI("foo%20bar.txt"), URLUtils.toURI(new File(" foo bar.txt ")));
+    }
+
+    @Test
+    public void testStringToUri() throws URISyntaxException {
+        assertEquals(new URI("test.txt"), URLUtils.toURI("test.txt"));
+        assertEquals(new URI("foo%20bar.txt"), URLUtils.toURI("foo bar.txt"));
+        assertEquals(new URI("foo/bar.txt"), URLUtils.toURI("foo" + Constants.WINDOWS_SEPARATOR + "bar.txt"));
+        assertEquals(new URI("foo%20bar.txt"), URLUtils.toURI(" foo bar.txt "));
+        assertEquals(new URI("http://www.example.com/"), URLUtils.toURI(" http://www.example.com/ "));
     }
 
     @Test
@@ -174,6 +193,60 @@ public class URLUtilsTest {
         assertEquals(new URI("foo-1.bar"), URLUtils.addSuffix(new URI("foo.bar"), "-1"));
         assertEquals(new URI("baz/foo-1.bar"), URLUtils.addSuffix(new URI("baz/foo.bar"), "-1"));
         assertEquals(new URI("baz.qux/foo-1.bar"), URLUtils.addSuffix(new URI("baz.qux/foo.bar"), "-1"));
+    }
+
+    @Test
+    public void testGetTopicId() throws URISyntaxException {
+        assertEquals("bar", URLUtils.getTopicID(new URI("foo#bar/baz")));
+        assertEquals("bar", URLUtils.getTopicID(new URI("foo#bar")));
+        assertNull(URLUtils.getTopicID(new URI("foo#")));
+        assertNull(URLUtils.getTopicID(new URI("foo")));
+        assertEquals("bar", URLUtils.getTopicID(new URI("#bar/baz")));
+        assertEquals("bar", URLUtils.getTopicID(new URI("#bar")));
+        assertNull(URLUtils.getTopicID(new URI("")));
+        try {
+            assertNull(URLUtils.getTopicID(null));
+            fail();
+        } catch (final NullPointerException e) {}
+    }
+
+    @Test
+    public void testGetElementId() {
+        assertEquals("baz", URLUtils.getElementID("foo#bar/baz"));
+        assertNull(URLUtils.getElementID("foo#bar"));
+        assertNull(URLUtils.getElementID("foo#"));
+        assertNull(URLUtils.getElementID("foo"));
+        assertEquals("baz", URLUtils.getElementID("#bar/baz"));
+        assertNull(URLUtils.getElementID("#bar"));
+        assertNull(URLUtils.getElementID(""));
+        try {
+            assertNull(URLUtils.getElementID(null));
+            fail();
+        } catch (final NullPointerException e) {}
+    }
+
+    @Test
+    public void testSetElementId() throws URISyntaxException {
+        assertEquals(new URI("foo#bar/qux"), URLUtils.setElementID(new URI("foo#bar/baz"), "qux"));
+        assertEquals(new URI("foo#bar/qux"), URLUtils.setElementID(new URI("foo#bar"), "qux"));
+        try {
+            URLUtils.setElementID(new URI("foo#"), "qux");
+            fail();
+        } catch (final IllegalArgumentException e) {}
+        try {
+            URLUtils.setElementID(new URI("foo"), "qux");
+            fail();
+        } catch (final IllegalArgumentException e) {}
+
+        assertEquals(new URI("foo#bar"), URLUtils.setElementID(new URI("foo#bar/baz"), null));
+        assertEquals(new URI("foo#bar"), URLUtils.setElementID(new URI("foo#bar"), null));
+        assertEquals(new URI("foo"), URLUtils.setElementID(new URI("foo#"), null));
+        assertEquals(new URI("foo"), URLUtils.setElementID(new URI("foo"), null));
+
+        try {
+            URLUtils.setElementID(null, null);
+            fail();
+        } catch (final NullPointerException e) {}
     }
 
 }

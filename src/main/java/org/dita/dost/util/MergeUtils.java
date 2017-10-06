@@ -1,23 +1,19 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2004, 2005 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2004, 2005 All Rights Reserved.
  */
 package org.dita.dost.util;
 
 import static org.dita.dost.util.URLUtils.*;
 
-import java.io.File;
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.dita.dost.log.DITAOTJavaLogger;
 import org.dita.dost.log.DITAOTLogger;
 
 import org.xml.sax.XMLReader;
@@ -28,19 +24,25 @@ import org.xml.sax.XMLReader;
  */
 public final class MergeUtils {
 
-    private final Hashtable<URI, String> idMap;
+    private static final String PREFIX = "unique_";
+    private final Map<URI, String> idMap;
     private int index;
     /** Set of visited topic files. */
     private final Set<URI> visitSet;
+    private DITAOTLogger logger;
 
     /**
      * Default Constructor
      */
     public MergeUtils() {
         super();
-        idMap = new Hashtable<>();
+        idMap = new ConcurrentHashMap<>();
         visitSet = Collections.synchronizedSet(new HashSet<URI>(256));
         index = 0;
+    }
+
+    public void setLogger(final DITAOTLogger logger) {
+        this.logger = logger;
     }
 
     /**
@@ -72,7 +74,7 @@ public final class MergeUtils {
         }
         final URI localId = id.normalize();
         index ++;
-        final String newId = "unique_" + Integer.toString(index);
+        final String newId = PREFIX + Integer.toString(index);
         idMap.put(localId, newId);
         return newId;
     }
@@ -124,18 +126,14 @@ public final class MergeUtils {
     }
 
     /**
-     * 
      * Get the first topic id.
-     * @param path file path
-     * @param dir file dir
+     *
+     * @param file file URI
      * @param useCatalog whether use catalog file for validation
      * @return topic id
      */
-    public static String getFirstTopicId(final URI path, final File dir, final boolean useCatalog){
-        if (path == null && dir == null) {
-            return null;
-        }
-        final DITAOTLogger logger = new DITAOTJavaLogger();
+    public String getFirstTopicId(final URI file, final boolean useCatalog) {
+        assert file.isAbsolute();
         final StringBuilder firstTopicId = new StringBuilder();
         final TopicIdParser parser = new TopicIdParser(firstTopicId);
         try {
@@ -144,7 +142,7 @@ public final class MergeUtils {
             if (useCatalog) {
                 reader.setEntityResolver(CatalogUtils.getCatalogResolver());
             }
-            reader.parse(dir.toURI().resolve(path).toString());
+            reader.parse(file.toString());
         } catch (final Exception e) {
             logger.error(e.getMessage(), e) ;
         }

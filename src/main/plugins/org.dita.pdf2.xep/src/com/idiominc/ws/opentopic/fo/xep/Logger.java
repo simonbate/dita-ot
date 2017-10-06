@@ -28,14 +28,13 @@ licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
 This file is part of the DITA Open Toolkit project.
-See the accompanying license.txt file for applicable licenses.
+See the accompanying LICENSE file for applicable license.
  */
  
 import org.dita.dost.log.MessageUtils;
  
 public class Logger implements com.renderx.xep.lib.Logger {
 
-    private final MessageUtils messageUtils = MessageUtils.getInstance();
     private final Runner runner;
 
     public Logger(final Runner runner) {
@@ -61,17 +60,17 @@ public class Logger implements com.renderx.xep.lib.Logger {
     }
 
     public void warning(final String message) {
-        System.err.println(messageUtils.getMessage("XEPJ001W", message).toString());
+        System.err.println(MessageUtils.getMessage("XEPJ001W", message).toString());
     }
 
     public void error(final String message) {
         runner.fail();
-        System.err.println(messageUtils.getMessage("XEPJ002E", message).toString());
+        System.err.println(MessageUtils.getMessage("XEPJ002E", message).toString());
     }
 
     public void exception(final String message, final java.lang.Exception except) {
         runner.fail();
-        System.err.println(messageUtils.getMessage("XEPJ003E", message).toString());
+        System.err.println(MessageUtils.getMessage("XEPJ003E", message).toString());
     }
 }
 

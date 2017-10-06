@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2007 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2007 All Rights Reserved.
  */
 package org.dita.dost.module;
 
@@ -12,17 +12,12 @@ import static org.apache.commons.io.FileUtils.*;
 import static org.dita.dost.util.Constants.*;
 import static org.dita.dost.util.URLUtils.*;
 import static org.dita.dost.util.FileUtils.*;
+import static org.dita.dost.util.XMLUtils.getDocumentBuilder;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -40,7 +35,7 @@ import org.xml.sax.SAXException;
 
 /**
  * The chunking module class.
- *
+ * <p>
  * Starting from map files, it parses and processes chunk attribute, writes out the chunked
  * results and finally updates reference pointing to chunked topics in other topics.
  */
@@ -52,18 +47,11 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
     /**
      * using to save relative path when do rename action for newly chunked file
      */
-    private final Map<String, String> relativePath2fix = new HashMap<>();
-
-    /**
-     * Constructor.
-     */
-    public ChunkModule() {
-        super();
-    }
+    private final Map<URI, String> relativePath2fix = new HashMap<>();
 
     /**
      * Entry point of chunk module.
-     * 
+     *
      * @param input Input parameters and resources.
      * @return null
      * @throws DITAOTException exception
@@ -81,8 +69,8 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
         }
 
         try {
-            final File mapFile = new File(job.tempDir.toURI().resolve(job.getInputMap()));
-            if (transtype.equals(INDEX_TYPE_ECLIPSEHELP) && isEclipseMap(mapFile)) {
+            final File mapFile = new File(job.tempDirURI.resolve(job.getInputMap()));
+            if (transtype.equals(INDEX_TYPE_ECLIPSEHELP) && isEclipseMap(mapFile.toURI())) {
                 for (final FileInfo f : job.getFileInfo()) {
                     if (ATTR_FORMAT_VALUE_DITAMAP.equals(f.format)) {
                         mapReader.read(new File(job.tempDir, f.file.getPath()).getAbsoluteFile());
@@ -97,10 +85,11 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
             logger.error(e.getMessage(), e);
         }
 
-        final Map<String, String> changeTable = mapReader.getChangeTable();
+        final Map<URI, URI> changeTable = mapReader.getChangeTable();
         if (hasChanges(changeTable)) {
-            updateList(changeTable, mapReader.getConflicTable());
-            updateRefOfDita(changeTable, mapReader.getConflicTable());
+            final Map<URI, URI> conflicTable = mapReader.getConflicTable();
+            updateList(changeTable, conflicTable, mapReader);
+            updateRefOfDita(changeTable, conflicTable);
         }
 
         return null;
@@ -109,11 +98,11 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
     /**
      * Test whether there are changes that require topic rewriting.
      */
-    private boolean hasChanges(final Map<String, String> changeTable) {
+    private boolean hasChanges(final Map<URI, URI> changeTable) {
         if (changeTable.isEmpty()) {
             return false;
         }
-        for (Map.Entry<String, String> e: changeTable.entrySet()) {
+        for (Map.Entry<URI, URI> e : changeTable.entrySet()) {
             if (!e.getKey().equals(e.getValue())) {
                 return true;
             }
@@ -128,11 +117,11 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
      * @return {@code true} if Eclipse specialization, otherwise {@code false}
      * @throws DITAOTException if reading ditamap fails
      */
-    private boolean isEclipseMap(final File mapFile) throws DITAOTException {
-        final DocumentBuilder builder = XMLUtils.getDocumentBuilder();
+    private boolean isEclipseMap(final URI mapFile) throws DITAOTException {
+        final DocumentBuilder builder = getDocumentBuilder();
         Document doc;
         try {
-            doc = builder.parse(mapFile);
+            doc = builder.parse(mapFile.toString());
         } catch (final SAXException | IOException e) {
             throw new DITAOTException("Failed to parse input map: " + e.getMessage(), e);
         }
@@ -143,7 +132,7 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
     /**
      * Update href attributes in ditamap and topic files.
      */
-    private void updateRefOfDita(final Map<String, String> changeTable, final Map<String, String> conflictTable) {
+    private void updateRefOfDita(final Map<URI, URI> changeTable, final Map<URI, URI> conflictTable) {
         final TopicRefWriter topicRefWriter = new TopicRefWriter();
         topicRefWriter.setLogger(logger);
         topicRefWriter.setJob(job);
@@ -152,12 +141,11 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
         try {
             for (final FileInfo f : job.getFileInfo()) {
                 if (ATTR_FORMAT_VALUE_DITA.equals(f.format) || ATTR_FORMAT_VALUE_DITAMAP.equals(f.format)) {
-                    topicRefWriter.setFixpath(relativePath2fix.get(f.file.toString()));
-                    topicRefWriter.write(new File(job.tempDir.getAbsoluteFile(), f.file.getPath()).getAbsoluteFile());
+                    topicRefWriter.setFixpath(relativePath2fix.get(f.uri));
+                    final File tmp = new File(job.tempDirURI.resolve(f.uri));
+                    topicRefWriter.write(tmp);
                 }
             }
-        } catch (final RuntimeException e) {
-            throw e;
         } catch (final DITAOTException ex) {
             logger.error(ex.getMessage(), ex);
         }
@@ -167,38 +155,36 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
     /**
      * Update Job configuration to include new generated files
      */
-    private void updateList(final Map<String, String> changeTable, final Map<String, String> conflictTable) {
-        final URI xmlDitalist = new File(job.tempDir, "dummy.xml").toURI();
+    private void updateList(final Map<URI, URI> changeTable, final Map<URI, URI> conflictTable, final ChunkMapReader mapReader) {
+        final URI xmlDitalist = job.tempDirURI.resolve("dummy.xml");
 
         final Set<URI> hrefTopics = new HashSet<>();
+        final Set<URI> chunkTopicSet = mapReader.getChunkTopicSet();
         for (final FileInfo f : job.getFileInfo()) {
-            if (f.isNonConrefTarget) {
+            final URI abs = job.tempDirURI.resolve(f.uri);
+            if (f.isTarget && !chunkTopicSet.contains(abs)) {
                 hrefTopics.add(f.uri);
             }
         }
         for (final FileInfo f : job.getFileInfo()) {
-            if (f.isSkipChunk) {
+            final URI abs = job.tempDirURI.resolve(f.uri);
+            if (chunkTopicSet.contains(abs)) {
                 final URI s = f.uri;
                 if (s.getFragment() == null) {
                     // This entry does not have an anchor, we assume that this
                     // topic will
                     // be fully chunked. Thus it should not produce any output.
-                    final Iterator<URI> hrefit = hrefTopics.iterator();
-                    while (hrefit.hasNext()) {
-                        final URI ent = hrefit.next();
-                        if (resolve(job.tempDir, ent).equals(
-                                resolve(job.tempDir, s))) {
-                            // The entry in hrefTopics points to the same target
-                            // as entry in chunkTopics, it should be removed.
-                            hrefit.remove();
-                        }
-                    }
+                    // The entry in hrefTopics points to the same target
+                    // as entry in chunkTopics, it should be removed.
+                    hrefTopics.removeIf(ent -> job.tempDirURI.resolve(ent).equals(
+                            job.tempDirURI.resolve(s)));
                 } else if (hrefTopics.contains(s)) {
                     hrefTopics.remove(s);
                 }
             }
         }
 
+        // relative temporary files
         final Set<URI> topicList = new LinkedHashSet<>(128);
         final Set<URI> oldTopicList = new HashSet<>();
         for (final FileInfo f : job.getFileInfo()) {
@@ -206,14 +192,13 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
                 oldTopicList.add(f.uri);
             }
         }
-        for (final URI hrefTopic : hrefTopics) {
-            final URI t = getRelativePath(xmlDitalist, job.tempDir.toURI().resolve(stripFragment(hrefTopic.toString())));
+        for (final URI t : hrefTopics) {
             topicList.add(t);
             if (oldTopicList.contains(t)) {
                 oldTopicList.remove(t);
             }
         }
-        
+
         final Set<URI> chunkedTopicSet = new LinkedHashSet<>(128);
         final Set<URI> chunkedDitamapSet = new LinkedHashSet<>(128);
         final Set<URI> ditamapList = new HashSet<>();
@@ -222,13 +207,12 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
                 ditamapList.add(f.uri);
             }
         }
-        // XXX: Change to <File, File>
-        for (final Map.Entry<String, String> entry : changeTable.entrySet()) {
-            final String oldFile = entry.getKey();
-            if (entry.getValue().equals(oldFile)) {
+        for (final Map.Entry<URI, URI> entry : changeTable.entrySet()) {
+            final URI oldFile = entry.getKey();
+            final URI newFile = entry.getValue();
+            if (newFile.equals(oldFile)) {
                 // newly chunked file
-                URI newChunkedFile = new File(entry.getValue()).toURI();
-                newChunkedFile = getRelativePath(xmlDitalist, newChunkedFile);
+                final URI newChunkedFile = getRelativePath(xmlDitalist, newFile);
                 final String extName = getExtension(newChunkedFile.getPath());
                 if (extName != null && !extName.equalsIgnoreCase(ATTR_FORMAT_VALUE_DITAMAP)) {
                     chunkedTopicSet.add(newChunkedFile);
@@ -253,37 +237,43 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
         }
         // removed extra topic files
         for (final URI s : oldTopicList) {
-//            if (!StringUtils.isEmptyString(s)) {
-                final File f = new File(job.tempDir.toURI().resolve(s));
-                if (f.exists() && !f.delete()) {
-                    logger.error("Failed to delete " + f.getAbsolutePath());
-                }
-//            }
+            final File f = new File(job.tempDirURI.resolve(s));
+            logger.debug("Delete " + f.toURI());
+            if (f.exists() && !f.delete()) {
+                logger.error("Failed to delete " + f.getAbsolutePath());
+            }
         }
 
         // TODO we have refined topic list and removed extra topic files, next
         // we need to clean up
         // conflictTable and try to resolve file name conflicts.
-        for (final Map.Entry<String, String> entry : changeTable.entrySet()) {
-            final String oldFile = entry.getKey();
-            if (entry.getValue().equals(oldFile)) {
+        for (final Map.Entry<URI, URI> entry : changeTable.entrySet()) {
+            final URI oldFile = entry.getKey();
+            final URI from = entry.getValue();
+            if (from.equals(oldFile)) {
                 // original topic file
-                final String targetPath = conflictTable.get(entry.getKey());
+                // FIXME
+                final URI targetPath = conflictTable.get(oldFile);
                 if (targetPath != null) {
-                    final URI target = new File(targetPath).toURI();
+                    final URI target = targetPath;
                     if (!new File(target).exists()) {
                         // newly chunked file
-                        final URI from = new File(entry.getValue()).toURI();
                         URI relativePath = getRelativePath(xmlDitalist, from);
                         final URI relativeTargetPath = getRelativePath(xmlDitalist, target);
-                        if (relativeTargetPath.getPath().lastIndexOf(File.separator) != -1) {
-                            relativePath2fix.put(relativeTargetPath.getPath(),
-                                    relativeTargetPath.getPath().substring(0, relativeTargetPath.getPath().lastIndexOf(File.separator) + 1));
+                        if (relativeTargetPath.getPath().contains(URI_SEPARATOR)) {
+                            relativePath2fix.put(relativeTargetPath,
+                                    relativeTargetPath.getPath().substring(0, relativeTargetPath.getPath().lastIndexOf(URI_SEPARATOR) + 1));
                         }
                         // ensure the newly chunked file to the old one
                         try {
+                            logger.debug("Delete " + target);
                             deleteQuietly(new File(target));
+                            logger.debug("Move " + from + " to " + target);
                             moveFile(new File(from), new File(target));
+                            final FileInfo fi = job.getFileInfo(from);
+                            if (fi != null) {
+                                job.remove(fi);
+                            }
                         } catch (final IOException e) {
                             logger.error("Failed to replace chunk topic: " + e.getMessage(), e);
 
@@ -298,7 +288,7 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
                         topicList.add(relativePath);
                         chunkedTopicSet.add(relativePath);
                     } else {
-                        conflictTable.remove(entry.getKey());
+                        conflictTable.remove(oldFile);
                     }
                 }
             }
@@ -309,16 +299,20 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
         all.addAll(ditamapList);
         all.addAll(chunkedDitamapSet);
         all.addAll(chunkedTopicSet);
-        
+
         // remove redundant topic information
-        for (final URI file: oldTopicList) {
+        for (final URI file : oldTopicList) {
             if (!all.contains(file)) {
-                job.remove(job.getOrCreateFileInfo(file));
+                final FileInfo fi = job.getFileInfo(file);
+                if (fi != null) {
+                    job.remove(fi);
+                }
             }
         }
-        
+
         for (final URI file : topicList) {
-            final FileInfo ff = job.getOrCreateFileInfo(file);
+            // FIXME
+            final FileInfo ff = job.getOrCreateFileInfo(stripFragment(file));
             ff.format = ATTR_FORMAT_VALUE_DITA;
         }
         for (final URI file : ditamapList) {
@@ -332,7 +326,8 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
             f.isResourceOnly = false;
         }
         for (final URI file : chunkedTopicSet) {
-            final FileInfo f = job.getOrCreateFileInfo(file);
+            // FIXME
+            final FileInfo f = job.getOrCreateFileInfo(stripFragment(file));
             f.format = ATTR_FORMAT_VALUE_DITA;
             f.isResourceOnly = false;
         }
@@ -367,8 +362,8 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
 
         /**
          * Generate file name
-         * 
-         * @param prefix file name prefix
+         *
+         * @param prefix    file name prefix
          * @param extension file extension
          * @return generated file name
          */
@@ -376,7 +371,7 @@ final public class ChunkModule extends AbstractPipelineModuleImpl {
 
         /**
          * Generate ID.
-         * 
+         *
          * @return generated ID
          */
         String generateID();

@@ -27,8 +27,8 @@ These terms and conditions supersede the terms and conditions in any
 licensing agreement to the extent that such terms and conditions conflict
 with those set forth herein.
 
-This file is part of the DITA Open Toolkit project hosted on Sourceforge.net. 
-See the accompanying license.txt file for applicable licenses.
+This file is part of the DITA Open Toolkit project.
+See the accompanying LICENSE file for applicable license.
 -->
 
 <xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -47,9 +47,7 @@ See the accompanying license.txt file for applicable licenses.
     <xsl:param name="theParameters" as="document-node()*"/>
     
     <xsl:call-template name="output-message">
-      <xsl:with-param name="msgcat">DOTX</xsl:with-param>
-      <xsl:with-param name="msgnum">066</xsl:with-param>
-      <xsl:with-param name="msgsev">W</xsl:with-param>
+      <xsl:with-param name="id" select="'DOTX066W'"/>
       <xsl:with-param name="msgparams">%1=insertVariable</xsl:with-param>
     </xsl:call-template>
     <xsl:call-template name="getVariable">

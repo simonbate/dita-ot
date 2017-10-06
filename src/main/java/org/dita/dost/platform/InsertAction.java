@@ -1,10 +1,10 @@
 /*
  * This file is part of the DITA Open Toolkit project.
- * See the accompanying license.txt file for applicable licenses.
- */
+ *
+ * Copyright 2005, 2006 IBM Corporation
+ *
+ * See the accompanying LICENSE file for applicable license.
 
-/*
- * (c) Copyright IBM Corp. 2005, 2006 All Rights Reserved.
  */
 package org.dita.dost.platform;
 
@@ -14,14 +14,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.dita.dost.log.DITAOTJavaLogger;
 import org.dita.dost.log.DITAOTLogger;
-import org.dita.dost.util.XMLUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLFilterImpl;
+import org.xml.sax.helpers.XMLReaderFactory;
 
 /**
  * InsertAction implements IAction and insert the resource
@@ -42,10 +41,9 @@ class InsertAction extends XMLFilterImpl implements IAction {
      */
     public InsertAction() {
         fileNameSet = new LinkedHashSet<>(16);
-        logger = new DITAOTJavaLogger();
         paramTable = new Hashtable<>();
         try {
-            reader = XMLUtils.getXMLReader();
+            reader = XMLReaderFactory.createXMLReader();
             reader.setContentHandler(this);
         } catch (final Exception e) {
             throw new RuntimeException("Failed to initialize parser: " + e.getMessage(), e);
